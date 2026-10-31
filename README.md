@@ -24,6 +24,26 @@ In the backend `.env`, allow this frontend: `CORS_ORIGIN=http://localhost:5173`.
 | `npm run build` | Production build into `dist/` |
 | `npm run preview` | Serve the production build locally |
 | `npm run lint` | Check the code with ESLint |
+| `npm test` | Unit and component tests (Vitest, ~10 s) |
+| `npm run test:watch` | Same, re-running on every file change |
+| `npm run test:e2e` | Browser tests of the whole app (Playwright, ~1 min) |
+| `npm run test:e2e:install` | First time only: download the browser used by the tests |
+
+## Tests
+
+**Unit and component tests** (`src/**/*.test.jsx`) use [Vitest](https://vitest.dev) and
+[Testing Library](https://testing-library.com): small pieces such as a hook, a form rule or
+a component, without a server.
+
+**Browser tests** (`e2e/*.spec.js`) use [Playwright](https://playwright.dev): a real Chromium
+clicks through the real app. `npm run test:e2e` starts **its own backend** from the
+`tiket-help` folder next to this one (or `BACKEND_DIR=path/to/tiket-help`) on a **temporary
+in-memory database** with test accounts, so your real data is never touched. The backend
+folder needs its `npm install` done. The first run downloads MongoDB for the test database
+(about a minute, then cached).
+
+A failed browser test saves a screenshot and a trace in `test-results/`; open the report
+with `npx playwright show-report`.
 
 ## Project structure
 
@@ -35,6 +55,7 @@ src/
 ├─ index.css                Tailwind + shadcn/ui theme (colors are CSS variables)
 ├─ app/
 │  ├─ App.jsx
+│  ├─ RouteError.jsx        error screen when a page crashes
 │  ├─ router.jsx            every URL → page, with role protection, lazy-loaded pages
 │  ├─ providers.jsx         TanStack Query + Auth + toasts
 │  ├─ HomeRedirect.jsx      "/" → dashboard (admins) or my tickets (users)
@@ -53,9 +74,13 @@ src/
 │  ├─ ui/                   shadcn/ui components (button, input, card, badge...)
 │  ├─ layout/               AppLayout, Sidebar, Topbar, PageHeader, navigation menu
 │  ├─ form/                 FormField (label + input + error)
-│  └─ feedback/             EmptyState, ComingSoon
-└─ lib/                     constants (statuses, priorities, roles), formatting,
-                            errors, token storage, file download helper
+│  ├─ data/                 Pagination, TableSkeleton
+│  └─ feedback/             EmptyState, ErrorState, ConfirmDialog, ComingSoon
+├─ hooks/                   useUrlFilters (filters in the URL), useDebouncedValue (search)
+├─ lib/                     constants (statuses, priorities, roles), queryKeys (cache keys),
+│                           formatting, errors, token storage, safe file download
+└─ test/                    test setup + render helper
+e2e/                        browser tests + throw-away test backend
 ```
 
 ## How it works
@@ -69,7 +94,12 @@ src/
 - **Server data:** fetched with TanStack Query (cache, loading and error states, background refresh).
 - **Statuses:** the backend stores them in French; the UI shows English labels
   (`lib/constants.js`: `non résolu` → Open, `en cours` → In progress, `résolu` → Resolved).
-- **Files:** downloads go through axios (a plain link cannot send the token).
+- **Files:** downloads go through axios (a plain link cannot send the token), and file
+  names from other users are cleaned before saving (`safeFileName`).
+- **Filters in the URL:** list pages keep their filters and page number in the address
+  (`useUrlFilters`), so refresh, back/forward and shared links keep the same view.
+- **Errors:** a page that crashes shows an error screen inside the layout (`RouteError`);
+  the menu keeps working. Failed requests show `ErrorState` with a "Try again" button.
 
 ## Adding shadcn/ui components
 
