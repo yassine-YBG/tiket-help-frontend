@@ -122,10 +122,10 @@ npx shadcn@latest add dialog select table
 | Status | Page | Who | URL |
 |---|---|---|---|
 | ✅ | Login, Register | visitors | `/login`, `/register` |
-| 🔜 | My tickets | everyone | `/tickets` |
-| 🔜 | New ticket | everyone | `/tickets/new` |
-| 🔜 | Ticket detail | owner, admins | `/tickets/:id` |
-| 🔜 | Profile | everyone | `/profile` |
+| ✅ | My tickets | everyone | `/tickets` |
+| ✅ | New ticket | everyone | `/tickets/new` |
+| ✅ | Ticket detail | owner, admins | `/tickets/:id` |
+| ✅ | Profile | everyone | `/profile` |
 | 🔜 | Dashboard | admins | `/admin/dashboard` |
 | 🔜 | All tickets | admins | `/admin/tickets` |
 | 🔜 | Users, Pending accounts | admins | `/admin/users`, `/admin/users/pending` |

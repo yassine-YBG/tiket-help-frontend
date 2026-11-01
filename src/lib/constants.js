@@ -48,3 +48,14 @@ export const ALLOWED_FILE_TYPES = [
 ];
 
 export const MIN_PASSWORD_LENGTH = 6;
+
+// Text limits shown in the forms (keeps requests small and readable)
+export const LIMITS = {
+  subject: 150,
+  category: 50,
+  description: 5000,
+  message: 5000,
+};
+
+// Suggestions for the category field (free text is still allowed)
+export const CATEGORY_SUGGESTIONS = ['YouTube', 'Spotify', 'Netflix', 'Account', 'Payment', 'Software', 'Other'];

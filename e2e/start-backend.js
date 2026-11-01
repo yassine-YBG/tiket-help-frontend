@@ -51,6 +51,9 @@ const ACCOUNTS = {
   user2: { username: 'Ali', lastname: 'Other', email: 'ali@e2e.test', role: 'user', activated: true },
   changer: { username: 'Rim', lastname: 'Changer', email: 'rim@e2e.test', role: 'user', activated: true },
   pending: { username: 'Pat', lastname: 'Pending', email: 'pending@e2e.test', role: 'user', activated: false },
+  lister: { username: 'Lina', lastname: 'Lister', email: 'lina@e2e.test', role: 'user', activated: true },
+  profile: { username: 'Sami', lastname: 'Profile', email: 'sami@e2e.test', role: 'user', activated: true },
+  empty: { username: 'Eya', lastname: 'Empty', email: 'eya@e2e.test', role: 'user', activated: true },
 };
 
 const hash = await bcrypt.hash(PASSWORD, 4);

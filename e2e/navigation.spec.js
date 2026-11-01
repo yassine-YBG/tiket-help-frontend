@@ -14,9 +14,10 @@ test('an admin lands on the dashboard and every menu link opens its page', async
   await page.goto('/');
   await expect(page).toHaveURL(/\/admin\/dashboard$/);
   for (const [label, url] of [...ADMIN_PAGES, ['My tickets', '/tickets'], ['New ticket', '/tickets/new'], ['Profile', '/profile']]) {
-    await page.getByRole('link', { name: label, exact: true }).click();
+    const menu = page.getByRole('navigation', { name: 'Main' });
+    await menu.getByRole('link', { name: label, exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`${url}$`));
-    await expect(page.getByRole('link', { name: label, exact: true })).toHaveAttribute('aria-current', 'page');
+    await expect(menu.getByRole('link', { name: label, exact: true })).toHaveAttribute('aria-current', 'page');
   }
 });
 
