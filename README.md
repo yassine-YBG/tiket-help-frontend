@@ -42,6 +42,13 @@ in-memory database** with test accounts, so your real data is never touched. The
 folder needs its `npm install` done. The first run downloads MongoDB for the test database
 (about a minute, then cached).
 
+If the browser download fails (slow network, firewall), use the browser already
+installed on the computer instead — Microsoft Edge is on every Windows PC:
+
+```powershell
+$env:E2E_BROWSER="msedge"; npm run test:e2e      # PowerShell
+```
+
 A failed browser test saves a screenshot and a trace in `test-results/`; open the report
 with `npx playwright show-report`.
 

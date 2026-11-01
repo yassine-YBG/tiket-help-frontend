@@ -21,7 +21,17 @@ export default defineConfig({
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    {
+      name: 'chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        // E2E_BROWSER=msedge (or chrome) uses the browser already installed on the computer
+        // instead of the one downloaded by `npm run test:e2e:install`.
+        ...(process.env.E2E_BROWSER ? { channel: process.env.E2E_BROWSER } : {}),
+      },
+    },
+  ],
   webServer: [
     {
       command: 'node e2e/start-backend.js',
