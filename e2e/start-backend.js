@@ -47,6 +47,7 @@ const User = requireBackend(path.join(BACKEND_DIR, 'models', 'User.js'));
 const ACCOUNTS = {
   superadmin: { username: 'Sara', lastname: 'Super', email: 'super@e2e.test', role: 'superadmin', activated: true },
   admin: { username: 'Malek', lastname: 'Admin', email: 'admin@e2e.test', role: 'admin', activated: true },
+  admin2: { username: 'Rami', lastname: 'Second', email: 'rami@e2e.test', role: 'admin', activated: true },
   user: { username: 'Nour', lastname: 'User', email: 'nour@e2e.test', role: 'user', activated: true },
   user2: { username: 'Ali', lastname: 'Other', email: 'ali@e2e.test', role: 'user', activated: true },
   changer: { username: 'Rim', lastname: 'Changer', email: 'rim@e2e.test', role: 'user', activated: true },

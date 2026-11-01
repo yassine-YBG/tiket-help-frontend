@@ -81,16 +81,16 @@ test.describe('admin actions on a ticket', () => {
   test('taking over a ticket another admin handles asks first', async ({ page, request, loginAs }) => {
     const { accounts } = fixtures();
     const id = await apiCreateTicket(request, accounts.user, { subject: 'Take over test' });
-    await request.put(`${fixtures().apiUrl}/tickets/assign/${id}`, api(accounts.superadmin));
+    await request.put(`${fixtures().apiUrl}/tickets/assign/${id}`, api(accounts.admin2));
 
     await loginAs('admin');
     await page.goto(`/tickets/${id}`);
     await page.getByRole('button', { name: 'Take over' }).click();
     const dialog = page.getByRole('alertdialog');
-    await expect(dialog).toContainText('Sara is handling this ticket');
+    await expect(dialog).toContainText('Rami is handling this ticket');
 
     await dialog.getByRole('button', { name: 'Cancel' }).click();
-    await expect(page.getByRole('complementary', { name: 'Ticket details' })).toContainText('Sara'); // nothing changed
+    await expect(page.getByRole('complementary', { name: 'Ticket details' })).toContainText('Rami'); // nothing changed
 
     await page.getByRole('button', { name: 'Take over' }).click();
     await dialog.getByRole('button', { name: 'Take over' }).click();
@@ -175,6 +175,21 @@ test.describe('admin actions on a ticket', () => {
     await page.getByRole('button', { name: 'Restore ticket' }).click();
     await expect(page.getByText('Ticket restored to the All tickets list')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Restore ticket' })).toHaveCount(0);
+  });
+
+  test('a ticket held by the superadmin is locked for admins', async ({ page, request, loginAs }) => {
+    const { accounts, apiUrl } = fixtures();
+    const id = await apiCreateTicket(request, accounts.user, { subject: 'Superadmin lock' });
+    expect((await request.put(`${apiUrl}/tickets/assign/${id}`, api(accounts.superadmin))).status()).toBe(200);
+
+    await loginAs('admin');
+    await page.goto(`/tickets/${id}`);
+    await expect(page.getByText('Sara (superadmin) is handling this ticket.')).toBeVisible();
+    await expect(page.getByRole('button', { name: /Take over|Assign to me/ })).toHaveCount(0);
+    await expect(page.getByLabel('Change priority')).toHaveCount(0);
+    // and the backend refuses it even without the UI
+    expect((await request.put(`${apiUrl}/tickets/assign/${id}`, api(accounts.admin))).status()).toBe(403);
+    expect((await request.put(`${apiUrl}/tickets/priority/${id}`, { ...api(accounts.admin), data: { priority: 'high' } })).status()).toBe(403);
   });
 
   test('a normal user sees none of these actions', async ({ page, request, loginAs }) => {

@@ -104,6 +104,9 @@ test.describe('ticket page', () => {
 
     await loginAs('admin');
     await page.goto(`/tickets/${id}`);
+    // support changes the priority only once the ticket is theirs
+    await expect(page.getByLabel('Change priority')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Assign to me' }).click();
     await page.getByLabel('Change priority').click();
     await page.getByRole('option', { name: 'Urgent' }).click();
     await expect(page.getByText('Priority changed to Urgent')).toBeVisible();
@@ -112,6 +115,7 @@ test.describe('ticket page', () => {
   test('the owner of an urgent ticket can lower it', async ({ page, request, loginAs }) => {
     const { accounts, apiUrl } = fixtures();
     const id = await apiCreateTicket(request, accounts.user, { subject: 'Was urgent' });
+    await request.put(`${apiUrl}/tickets/assign/${id}`, { headers: { Authorization: `Bearer ${accounts.admin.token}` } });
     await request.put(`${apiUrl}/tickets/priority/${id}`, {
       headers: { Authorization: `Bearer ${accounts.admin.token}` },
       data: { priority: 'urgent' },
@@ -186,6 +190,7 @@ test.describe('my tickets list', () => {
         priority: priority === 'urgent' ? 'high' : priority,
       });
       if (priority === 'urgent') {
+        await request.put(`${apiUrl}/tickets/assign/${id}`, { headers: { Authorization: `Bearer ${accounts.admin.token}` } });
         await request.put(`${apiUrl}/tickets/priority/${id}`, {
           headers: { Authorization: `Bearer ${accounts.admin.token}` },
           data: { priority: 'urgent' },

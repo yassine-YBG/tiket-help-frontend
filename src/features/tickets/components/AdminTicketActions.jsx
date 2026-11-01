@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
-import { ArchiveIcon, ArchiveRestoreIcon, UserCheckIcon, UserRoundCogIcon } from 'lucide-react';
+import { ArchiveIcon, ArchiveRestoreIcon, LockIcon, UserCheckIcon, UserRoundCogIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
@@ -10,7 +10,7 @@ import { useAuth } from '@/features/auth/useAuth';
 import { ROLES } from '@/lib/constants';
 import { getErrorMessage } from '@/lib/errors';
 import { useArchiveTicket, useAssignToMe, useUnarchiveTicket } from '../hooks/useTickets';
-import { assignment, nameOf } from '../ticketUtils';
+import { assignment, canTakeOver, nameOf } from '../ticketUtils';
 
 // "Assign to me" — or "Take over" (with confirmation) when another admin handles it.
 // Also used above the conversation, where support must assign before replying.
@@ -48,6 +48,14 @@ export function AssignButton({ ticket, className = 'w-full' }) {
   }
 
   const otherName = nameOf(ticket.handledBy);
+  if (!canTakeOver(ticket, user)) {
+    return (
+      <p className="flex items-center gap-2 text-sm text-muted-foreground">
+        <LockIcon className="size-4 shrink-0" />
+        Handled by {otherName} (superadmin)
+      </p>
+    );
+  }
   return (
     <>
       <Button variant="outline" onClick={() => setConfirmOpen(true)} className={className}>
