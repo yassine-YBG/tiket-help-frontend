@@ -28,3 +28,10 @@ export const needsReply = (ticket) => !!ticket.awaitingSupport && ticket.status 
 export const hasNewAnswer = (ticket) =>
   !!ticket.supportUpdatedAt &&
   (!ticket.ownerSeenAt || new Date(ticket.supportUpdatedAt) > new Date(ticket.ownerSeenAt));
+
+// Who handles the ticket, from the logged-in user's point of view: 'nobody' | 'me' | 'other'.
+// Support can reply / change the status only when it is 'me' (the backend enforces it).
+export function assignment(ticket, user) {
+  if (!ticket.handledBy) return 'nobody';
+  return idOf(ticket.handledBy) === user?.id ? 'me' : 'other';
+}

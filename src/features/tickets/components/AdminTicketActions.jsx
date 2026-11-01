@@ -10,16 +10,11 @@ import { useAuth } from '@/features/auth/useAuth';
 import { ROLES } from '@/lib/constants';
 import { getErrorMessage } from '@/lib/errors';
 import { useArchiveTicket, useAssignToMe, useUnarchiveTicket } from '../hooks/useTickets';
-import { idOf, nameOf } from '../ticketUtils';
+import { assignment, nameOf } from '../ticketUtils';
 
-// Who handles the ticket, from the logged-in admin's point of view
-function assignment(ticket, user) {
-  if (!ticket.handledBy) return 'nobody';
-  return idOf(ticket.handledBy) === user.id ? 'me' : 'other';
-}
-
-// "Assign to me" — or "Take over" (with confirmation) when another admin handles it
-function AssignButton({ ticket }) {
+// "Assign to me" — or "Take over" (with confirmation) when another admin handles it.
+// Also used above the conversation, where support must assign before replying.
+export function AssignButton({ ticket, className = 'w-full' }) {
   const { user } = useAuth();
   const assign = useAssignToMe(ticket._id);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -45,7 +40,7 @@ function AssignButton({ ticket }) {
 
   if (who === 'nobody') {
     return (
-      <Button onClick={() => run().catch(() => {})} disabled={assign.isPending} className="w-full">
+      <Button onClick={() => run().catch(() => {})} disabled={assign.isPending} className={className}>
         {assign.isPending ? <Spinner /> : <UserCheckIcon />}
         Assign to me
       </Button>
@@ -55,7 +50,7 @@ function AssignButton({ ticket }) {
   const otherName = nameOf(ticket.handledBy);
   return (
     <>
-      <Button variant="outline" onClick={() => setConfirmOpen(true)} className="w-full">
+      <Button variant="outline" onClick={() => setConfirmOpen(true)} className={className}>
         <UserRoundCogIcon />
         Take over
       </Button>
@@ -134,7 +129,8 @@ function RestoreButton({ ticket }) {
 }
 
 // Support-team actions at the bottom of the details panel (admins only)
-export function AdminTicketActions({ ticket }) {
+// showAssign=false when the page already shows "Assign to me" above the conversation
+export function AdminTicketActions({ ticket, showAssign = true }) {
   const { user } = useAuth();
   const mayArchive = canArchive(ticket, user);
 
@@ -151,7 +147,7 @@ export function AdminTicketActions({ ticket }) {
         </>
       ) : (
         <>
-          <AssignButton ticket={ticket} />
+          {showAssign && <AssignButton ticket={ticket} />}
           {mayArchive && <ArchiveButton ticket={ticket} />}
         </>
       )}
