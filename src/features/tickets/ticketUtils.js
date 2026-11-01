@@ -35,3 +35,9 @@ export function assignment(ticket, user) {
   if (!ticket.handledBy) return 'nobody';
   return idOf(ticket.handledBy) === user?.id ? 'me' : 'other';
 }
+
+// A ticket held by a superadmin can only be taken by another superadmin (backend rule)
+export const heldBySuperadmin = (ticket) =>
+  !!ticket.handledBy && typeof ticket.handledBy === 'object' && ticket.handledBy.role === 'superadmin';
+
+export const canTakeOver = (ticket, user) => !heldBySuperadmin(ticket) || user?.role === 'superadmin';

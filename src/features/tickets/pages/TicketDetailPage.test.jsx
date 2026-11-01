@@ -142,11 +142,36 @@ describe('TicketDetailPage', () => {
       expect(screen.queryByLabelText('Your reply')).not.toBeInTheDocument();
     });
 
+    it('an admin cannot take over a ticket held by a superadmin', async () => {
+      const held = { ...ticket, handledBy: { _id: 's1', username: 'Sara', role: 'superadmin' } };
+      vi.mocked(ticketsApi.get).mockResolvedValue(held);
+      setup(testUsers.admin);
+      expect(await screen.findByText('Sara (superadmin) is handling this ticket.')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /take over|assign to me/i })).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Your reply')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Change priority')).not.toBeInTheDocument();
+    });
+
+    it('another superadmin can take over a superadmin ticket', async () => {
+      const held = { ...ticket, handledBy: { _id: 's1', username: 'Sara', role: 'superadmin' } };
+      vi.mocked(ticketsApi.get).mockResolvedValue(held);
+      setup({ ...otherAdmin, id: 's2', role: 'superadmin' });
+      expect(await screen.findByRole('button', { name: 'Take over' })).toBeInTheDocument();
+    });
+
+    it("priority is read-only for an admin who doesn't handle the ticket", async () => {
+      vi.mocked(ticketsApi.get).mockResolvedValue({ ...ticket, handledBy: null });
+      setup(testUsers.admin);
+      await screen.findByText('Assign this ticket to yourself to reply to the user.');
+      expect(screen.queryByLabelText('Change priority')).not.toBeInTheDocument();
+    });
+
     it('the handler gets the reply box and the status dropdown', async () => {
       vi.mocked(ticketsApi.get).mockResolvedValue(ticket); // handled by Malek = testUsers.admin
       setup(testUsers.admin);
       expect(await screen.findByLabelText('Your reply')).toBeInTheDocument();
       expect(screen.getByLabelText('Change status')).toBeInTheDocument();
+      expect(screen.getByLabelText('Change priority')).toBeInTheDocument();
     });
 
     it('assigns an unassigned ticket in one click', async () => {

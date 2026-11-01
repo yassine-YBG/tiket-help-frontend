@@ -16,7 +16,7 @@ import { AdminTicketActions, AssignButton } from '../components/AdminTicketActio
 import { RefreshButton } from '@/components/layout/RefreshButton';
 import { StatusBadge } from '../components/StatusBadge';
 import { PriorityBadge } from '../components/PriorityBadge';
-import { assignment, hasNewAnswer, isOwner, nameOf } from '../ticketUtils';
+import { assignment, canTakeOver, hasNewAnswer, isOwner, nameOf } from '../ticketUtils';
 
 // A resolved ticket is closed: nobody writes in it any more (the backend refuses it).
 // The owner opens a follow-up ticket; support can reopen it with the status.
@@ -53,18 +53,18 @@ function ClosedTicketNote({ ticket, owner, admin }) {
 }
 
 // Support must have the ticket assigned to them before writing in it (backend rule)
-function AssignToReplyNote({ ticket, who }) {
-  const text =
-    who === 'nobody'
-      ? 'Assign this ticket to yourself to reply to the user.'
-      : `${nameOf(ticket.handledBy)} is handling this ticket. Take it over to reply.`;
+function AssignToReplyNote({ ticket, who, user }) {
+  let text;
+  if (who === 'nobody') text = 'Assign this ticket to yourself to reply to the user.';
+  else if (!canTakeOver(ticket, user)) text = `${nameOf(ticket.handledBy)} (superadmin) is handling this ticket.`;
+  else text = `${nameOf(ticket.handledBy)} is handling this ticket. Take it over to reply.`;
   return (
     <div role="note" className="grid gap-3 rounded-md border bg-muted px-4 py-3 text-sm text-muted-foreground sm:flex sm:items-center sm:justify-between">
       <p className="flex items-start gap-2">
         <UserCheckIcon className="mt-0.5 size-4 shrink-0" />
         {text}
       </p>
-      <AssignButton ticket={ticket} className="shrink-0" />
+      {canTakeOver(ticket, user) && <AssignButton ticket={ticket} className="shrink-0" />}
     </div>
   );
 }
@@ -136,11 +136,11 @@ export default function TicketDetailPage() {
   }
 
   const admin = isAdmin(user);
-  const canEditPriority = owner || admin;
   const closed = ticket.status === 'résolu';
-  // support writes / changes the status only on a ticket assigned to them
+  // support writes / changes the status or the priority only on a ticket assigned to them
   const who = assignment(ticket, user);
   const handlesIt = admin && who === 'me';
+  const canEditPriority = owner || handlesIt;
   const canReply = owner || handlesIt;
   const assignAboveConversation = admin && !closed && !canReply;
 
@@ -167,7 +167,7 @@ export default function TicketDetailPage() {
           ) : canReply ? (
             <ReplyForm ticketId={ticket._id} />
           ) : (
-            admin && <AssignToReplyNote ticket={ticket} who={who} />
+            admin && <AssignToReplyNote ticket={ticket} who={who} user={user} />
           )}
         </section>
 
