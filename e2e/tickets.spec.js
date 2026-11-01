@@ -136,14 +136,18 @@ test.describe('ticket page', () => {
     const id = await apiCreateTicket(request, fixtures().accounts.user, { subject: 'Needs support' });
     await loginAs('admin');
     await page.goto(`/tickets/${id}`);
+    // support must take the ticket before writing in it
+    await expect(page.getByText('Assign this ticket to yourself to reply to the user.')).toBeVisible();
+    await page.getByRole('button', { name: 'Assign to me' }).click();
     await page.getByLabel('Your reply').fill('We are looking into it');
     await page.getByRole('button', { name: 'Send reply' }).click();
-    await expect(page.getByText('We are looking into it')).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Conversation' }).getByText('We are looking into it')).toBeVisible();
   });
 
   test('the owner sees the support reply labelled "Support", without the admin email', async ({ page, request, loginAs }) => {
     const { accounts, apiUrl } = fixtures();
     const id = await apiCreateTicket(request, accounts.user, { subject: 'Support label test' });
+    await request.put(`${apiUrl}/tickets/assign/${id}`, { headers: { Authorization: `Bearer ${accounts.admin.token}` } });
     await request.post(`${apiUrl}/tickets/reply/${id}`, {
       headers: { Authorization: `Bearer ${accounts.admin.token}` },
       multipart: { message: 'Answer from support' },

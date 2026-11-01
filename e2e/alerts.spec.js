@@ -30,6 +30,7 @@ test('the full conversation: each side sees when the other one wrote', async ({ 
 
   // 2. support answers -> no longer "Needs reply"; the user gets "New answer" + counter
   await row.getByRole('link', { name: 'Alerts flow' }).click();
+  await admin.getByRole('button', { name: 'Assign to me' }).click();
   await admin.getByLabel('Your reply').fill('Which version do you use?');
   await admin.getByRole('button', { name: 'Send reply' }).click();
   await expect(admin.getByRole('region', { name: 'Conversation' }).getByText('Which version do you use?')).toBeVisible();
@@ -109,6 +110,7 @@ test('next to the ticket title: refresh shows a new reply and keeps the text bei
   await page.getByLabel('Your reply').fill('Typed but not sent');
 
   // support answers from another computer
+  await request.put(`${apiUrl}/tickets/assign/${id}`, api(accounts.admin));
   await request.post(`${apiUrl}/tickets/reply/${id}`, { ...api(accounts.admin), data: { message: 'Answer from support' } });
 
   await page.getByRole('button', { name: 'Refresh' }).click();

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link, useParams } from 'react-router';
-import { ArchiveIcon, ArrowLeftIcon, LockIcon, PlusIcon, SearchXIcon } from 'lucide-react';
+import { ArchiveIcon, ArrowLeftIcon, LockIcon, PlusIcon, SearchXIcon, UserCheckIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/feedback/EmptyState';
@@ -12,11 +12,11 @@ import { useMarkSeen, useTicket } from '../hooks/useTickets';
 import { MessageThread } from '../components/MessageThread';
 import { ReplyForm } from '../components/ReplyForm';
 import { TicketDetailsPanel } from '../components/TicketDetailsPanel';
-import { AdminTicketActions } from '../components/AdminTicketActions';
+import { AdminTicketActions, AssignButton } from '../components/AdminTicketActions';
 import { RefreshButton } from '@/components/layout/RefreshButton';
 import { StatusBadge } from '../components/StatusBadge';
 import { PriorityBadge } from '../components/PriorityBadge';
-import { hasNewAnswer, isOwner } from '../ticketUtils';
+import { assignment, hasNewAnswer, isOwner, nameOf } from '../ticketUtils';
 
 // A resolved ticket is closed: nobody writes in it any more (the backend refuses it).
 // The owner opens a follow-up ticket; support can reopen it with the status.
@@ -30,7 +30,7 @@ function ClosedTicketNote({ ticket, owner, admin }) {
     text = 'This ticket is archived: it is hidden from the All tickets list. Restore it or change its status to write in it.';
   } else {
     text = admin
-      ? 'This ticket is resolved and closed. Set the status back to In progress to write in it.'
+      ? 'This ticket is resolved and closed. The admin handling it can set the status back to In progress to write in it.'
       : 'This ticket is resolved and closed.';
   }
 
@@ -48,6 +48,23 @@ function ClosedTicketNote({ ticket, owner, admin }) {
           </Link>
         </Button>
       )}
+    </div>
+  );
+}
+
+// Support must have the ticket assigned to them before writing in it (backend rule)
+function AssignToReplyNote({ ticket, who }) {
+  const text =
+    who === 'nobody'
+      ? 'Assign this ticket to yourself to reply to the user.'
+      : `${nameOf(ticket.handledBy)} is handling this ticket. Take it over to reply.`;
+  return (
+    <div role="note" className="grid gap-3 rounded-md border bg-muted px-4 py-3 text-sm text-muted-foreground sm:flex sm:items-center sm:justify-between">
+      <p className="flex items-start gap-2">
+        <UserCheckIcon className="mt-0.5 size-4 shrink-0" />
+        {text}
+      </p>
+      <AssignButton ticket={ticket} className="shrink-0" />
     </div>
   );
 }
@@ -121,6 +138,11 @@ export default function TicketDetailPage() {
   const admin = isAdmin(user);
   const canEditPriority = owner || admin;
   const closed = ticket.status === 'résolu';
+  // support writes / changes the status only on a ticket assigned to them
+  const who = assignment(ticket, user);
+  const handlesIt = admin && who === 'me';
+  const canReply = owner || handlesIt;
+  const assignAboveConversation = admin && !closed && !canReply;
 
   return (
     <>
@@ -142,14 +164,16 @@ export default function TicketDetailPage() {
           <MessageThread ticket={ticket} currentUser={user} />
           {closed ? (
             <ClosedTicketNote ticket={ticket} owner={owner} admin={admin} />
-          ) : (
+          ) : canReply ? (
             <ReplyForm ticketId={ticket._id} />
+          ) : (
+            admin && <AssignToReplyNote ticket={ticket} who={who} />
           )}
         </section>
 
         <aside className="lg:sticky lg:top-20" aria-label="Ticket details">
-          <TicketDetailsPanel ticket={ticket} canEditPriority={canEditPriority} canManage={admin}>
-            {admin && <AdminTicketActions ticket={ticket} />}
+          <TicketDetailsPanel ticket={ticket} canEditPriority={canEditPriority} canManage={handlesIt}>
+            {admin && <AdminTicketActions ticket={ticket} showAssign={!assignAboveConversation} />}
           </TicketDetailsPanel>
         </aside>
       </div>

@@ -117,6 +117,38 @@ describe('TicketDetailPage', () => {
       await waitFor(() => expect(ticketsApi.updateStatus).toHaveBeenCalledWith('t1', 'résolu'));
     });
 
+    it('an unassigned ticket: no reply box, no status change, one "Assign to me" above the conversation', async () => {
+      vi.mocked(ticketsApi.get).mockResolvedValue({ ...ticket, handledBy: null });
+      setup(testUsers.admin);
+      expect(await screen.findByText('Assign this ticket to yourself to reply to the user.')).toBeInTheDocument();
+      expect(screen.queryByLabelText('Your reply')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Change status')).not.toBeInTheDocument();
+      expect(screen.getAllByRole('button', { name: 'Assign to me' })).toHaveLength(1);
+    });
+
+    it("another admin's ticket: no reply box, no status change, Take over", async () => {
+      vi.mocked(ticketsApi.get).mockResolvedValue(ticket); // handled by Malek
+      setup(otherAdmin);
+      expect(await screen.findByText('Malek is handling this ticket. Take it over to reply.')).toBeInTheDocument();
+      expect(screen.queryByLabelText('Your reply')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Change status')).not.toBeInTheDocument();
+      expect(screen.getAllByRole('button', { name: 'Take over' })).toHaveLength(1);
+    });
+
+    it('a superadmin follows the same rule', async () => {
+      vi.mocked(ticketsApi.get).mockResolvedValue(ticket);
+      setup({ ...otherAdmin, role: 'superadmin' });
+      expect(await screen.findByText(/Take it over to reply/)).toBeInTheDocument();
+      expect(screen.queryByLabelText('Your reply')).not.toBeInTheDocument();
+    });
+
+    it('the handler gets the reply box and the status dropdown', async () => {
+      vi.mocked(ticketsApi.get).mockResolvedValue(ticket); // handled by Malek = testUsers.admin
+      setup(testUsers.admin);
+      expect(await screen.findByLabelText('Your reply')).toBeInTheDocument();
+      expect(screen.getByLabelText('Change status')).toBeInTheDocument();
+    });
+
     it('assigns an unassigned ticket in one click', async () => {
       vi.mocked(ticketsApi.get).mockResolvedValue({ ...ticket, handledBy: null });
       vi.mocked(ticketsApi.assignToMe).mockResolvedValue({ status: 'en cours' });
@@ -213,7 +245,7 @@ describe('TicketDetailPage', () => {
   it('a resolved ticket is closed for the admin too', async () => {
     vi.mocked(ticketsApi.get).mockResolvedValue({ ...ticket, status: 'résolu' });
     setup(testUsers.admin);
-    expect(await screen.findByText(/Set the status back to In progress to write in it/)).toBeInTheDocument();
+    expect(await screen.findByText(/can set the status back to In progress to write in it/)).toBeInTheDocument();
     expect(screen.queryByLabelText('Your reply')).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Open a new ticket' })).not.toBeInTheDocument();
   });

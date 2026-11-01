@@ -58,7 +58,9 @@ test.describe('admin actions on a ticket', () => {
     await loginAs('admin');
     await page.goto(`/tickets/${id}`);
 
-    await expect(page.getByLabel('Change status')).toHaveText('Open');
+    // not assigned yet: no status change, no reply box
+    await expect(page.getByLabel('Change status')).toHaveCount(0);
+    await expect(page.getByLabel('Your reply')).toHaveCount(0);
     await page.getByRole('button', { name: 'Assign to me' }).click();
     await expect(page.getByText('You are handling this ticket')).toBeVisible();
     await expect(page.getByLabel('Change status')).toHaveText('In progress'); // the backend moved it
@@ -69,7 +71,7 @@ test.describe('admin actions on a ticket', () => {
     await expect(page.getByText('Status changed to Resolved')).toBeVisible();
     await expect(page.getByRole('complementary', { name: 'Ticket details' }).getByText('Resolved', { exact: true }).first()).toBeVisible();
     // resolved = closed: no reply box, even for support
-    await expect(page.getByRole('note')).toContainText('Set the status back to In progress to write in it');
+    await expect(page.getByRole('note')).toContainText('can set the status back to In progress to write in it');
     await expect(page.getByLabel('Your reply')).toHaveCount(0);
     await page.getByLabel('Change status').click();
     await page.getByRole('option', { name: 'In progress' }).click();
@@ -140,6 +142,7 @@ test.describe('admin actions on a ticket', () => {
   test('the owner sees "Closed by support" and opens a follow-up ticket', async ({ page, request, loginAs }) => {
     const { accounts, apiUrl } = fixtures();
     const id = await apiCreateTicket(request, accounts.user, { subject: 'Closed note' });
+    await request.put(`${apiUrl}/tickets/assign/${id}`, api(accounts.admin));
     await request.put(`${apiUrl}/tickets/status/${id}`, { ...api(accounts.admin), data: { status: 'résolu' } });
     expect((await request.put(`${apiUrl}/tickets/archive/${id}`, api(accounts.admin))).status()).toBe(200);
 
@@ -162,6 +165,7 @@ test.describe('admin actions on a ticket', () => {
   test('another admin cannot archive or restore; a superadmin can restore', async ({ page, request, loginAs }) => {
     const { accounts, apiUrl } = fixtures();
     const id = await apiCreateTicket(request, accounts.user, { subject: 'Restore test' });
+    await request.put(`${apiUrl}/tickets/assign/${id}`, api(accounts.admin));
     await request.put(`${apiUrl}/tickets/status/${id}`, { ...api(accounts.admin), data: { status: 'résolu' } });
     expect((await request.put(`${apiUrl}/tickets/archive/${id}`, api(accounts.superadmin))).status()).toBe(200);
 
