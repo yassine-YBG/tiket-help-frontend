@@ -44,6 +44,21 @@ function ArchivedFilter({ value, onChange }) {
   );
 }
 
+// "Needs reply" = the user wrote last and support has not answered (?awaitingSupport=true)
+function NeedsReplyFilter({ value, onChange }) {
+  return (
+    <Select value={value === 'true' ? 'true' : ANYONE} onValueChange={(next) => onChange(next === ANYONE ? '' : next)}>
+      <SelectTrigger aria-label="Filter by reply" className="w-[150px]">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ANYONE}>All replies</SelectItem>
+        <SelectItem value="true">Needs reply</SelectItem>
+      </SelectContent>
+    </Select>
+  );
+}
+
 function AssigneeFilter({ value, onChange }) {
   return (
     <Select value={value || ANYONE} onValueChange={(next) => onChange(next === ANYONE ? '' : next)}>
@@ -80,6 +95,10 @@ export default function AllTicketsPage() {
             resetFilters={resetFilters}
             activeCount={activeCount}
           >
+            <NeedsReplyFilter
+              value={filters.awaitingSupport}
+              onChange={(awaitingSupport) => setFilters({ awaitingSupport })}
+            />
             <AssigneeFilter value={filters.handledBy} onChange={(handledBy) => setFilters({ handledBy })} />
             <ArchivedFilter value={filters.archived} onChange={(archived) => setFilters({ archived })} />
           </TicketFilters>

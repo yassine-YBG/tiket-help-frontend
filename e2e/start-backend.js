@@ -54,6 +54,7 @@ const ACCOUNTS = {
   lister: { username: 'Lina', lastname: 'Lister', email: 'lina@e2e.test', role: 'user', activated: true },
   profile: { username: 'Sami', lastname: 'Profile', email: 'sami@e2e.test', role: 'user', activated: true },
   empty: { username: 'Eya', lastname: 'Empty', email: 'eya@e2e.test', role: 'user', activated: true },
+  alerts: { username: 'Alia', lastname: 'Alerts', email: 'alia@e2e.test', role: 'user', activated: true },
 };
 
 const hash = await bcrypt.hash(PASSWORD, 4);

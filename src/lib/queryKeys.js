@@ -7,6 +7,7 @@ export const queryKeys = {
     lists: () => ['tickets', 'list'],
     list: (scope, params) => ['tickets', 'list', scope, params], // scope: 'mine' | 'all'
     detail: (id) => ['tickets', 'detail', id],
+    summary: () => ['tickets', 'summary'], // menu counters
   },
   users: {
     all: ['users'],

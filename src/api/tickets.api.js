@@ -18,6 +18,11 @@ export const ticketsApi = {
 
   get: (id) => api.get(`/tickets/${id}`).then((r) => r.data),
 
+  // menu counters -> admins { needsReply, needsReplyMine } · users { newAnswers }
+  summary: () => api.get('/tickets/summary').then((r) => r.data),
+  // the owner opened the ticket (clears "New answer")
+  markSeen: (id) => api.put(`/tickets/seen/${id}`).then((r) => r.data),
+
   // data: { subject, description, category, priority }, files: File[]
   create: (data, files) =>
     api.post('/tickets/create', toFormData(data, files)).then((r) => r.data),

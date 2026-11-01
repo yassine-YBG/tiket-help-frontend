@@ -1,5 +1,6 @@
+import { useEffect } from 'react';
 import { Link, useParams } from 'react-router';
-import { ArchiveIcon, ArrowLeftIcon, LockIcon, SearchXIcon } from 'lucide-react';
+import { ArchiveIcon, ArrowLeftIcon, LockIcon, PlusIcon, SearchXIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/feedback/EmptyState';
@@ -7,32 +8,57 @@ import { ErrorState } from '@/components/feedback/ErrorState';
 import { useAuth } from '@/features/auth/useAuth';
 import { getStatusCode } from '@/lib/errors';
 import { isAdmin } from '@/lib/constants';
-import { useTicket } from '../hooks/useTickets';
+import { useMarkSeen, useTicket } from '../hooks/useTickets';
 import { MessageThread } from '../components/MessageThread';
 import { ReplyForm } from '../components/ReplyForm';
 import { TicketDetailsPanel } from '../components/TicketDetailsPanel';
 import { AdminTicketActions } from '../components/AdminTicketActions';
 import { StatusBadge } from '../components/StatusBadge';
 import { PriorityBadge } from '../components/PriorityBadge';
-import { isOwner } from '../ticketUtils';
+import { hasNewAnswer, isOwner } from '../ticketUtils';
 
-// Short note above the reply box for resolved / archived tickets
-function TicketStateNote({ ticket, admin }) {
-  let text = null;
-  if (ticket.archived) {
+// A resolved ticket is closed: nobody writes in it any more (the backend refuses it).
+// The owner opens a follow-up ticket; support can reopen it with the status.
+function ClosedTicketNote({ ticket, owner, admin }) {
+  let text;
+  if (owner) {
+    text = ticket.archived
+      ? 'Closed by support. If you still need help, open a new ticket.'
+      : 'This ticket is resolved and closed. If the problem comes back, open a new ticket.';
+  } else if (ticket.archived) {
+    text = 'This ticket is archived: it is hidden from the All tickets list. Restore it or change its status to write in it.';
+  } else {
     text = admin
-      ? 'This ticket is archived: it is hidden from the All tickets list. It comes back if the user replies.'
-      : 'Closed by support. Reply if you still need help — the support team will see your message.';
-  } else if (ticket.status === 'résolu') {
-    text = 'This ticket is resolved. You can still reply if the problem comes back.';
+      ? 'This ticket is resolved and closed. Set the status back to In progress to write in it.'
+      : 'This ticket is resolved and closed.';
   }
-  if (!text) return null;
+
   return (
-    <p role="note" className="flex items-start gap-2 rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
-      {ticket.archived && <ArchiveIcon className="mt-0.5 size-4 shrink-0" />}
-      {text}
-    </p>
+    <div role="note" className="grid gap-3 rounded-md border bg-muted px-4 py-3 text-sm text-muted-foreground sm:flex sm:items-center sm:justify-between">
+      <p className="flex items-start gap-2">
+        {ticket.archived ? <ArchiveIcon className="mt-0.5 size-4 shrink-0" /> : <LockIcon className="mt-0.5 size-4 shrink-0" />}
+        {text}
+      </p>
+      {owner && (
+        <Button asChild size="sm" className="shrink-0">
+          <Link to="/tickets/new" state={{ followUp: { id: ticket._id, subject: ticket.subject } }}>
+            <PlusIcon />
+            Open a new ticket
+          </Link>
+        </Button>
+      )}
+    </div>
   );
+}
+
+// The owner opened a ticket with a new answer from support: clear the alert once
+function useMarkSeenWhenOwner(ticket, owner) {
+  const { mutate } = useMarkSeen();
+  const unseen = !!ticket && owner && hasNewAnswer(ticket);
+  const ticketId = ticket?._id;
+  useEffect(() => {
+    if (unseen) mutate(ticketId);
+  }, [unseen, ticketId, mutate]);
 }
 
 function BackLink({ to }) {
@@ -50,6 +76,8 @@ export default function TicketDetailPage() {
   const { id } = useParams();
   const { user } = useAuth();
   const { data: ticket, isPending, isError, error, refetch } = useTicket(id);
+  const owner = !!ticket && isOwner(ticket, user);
+  useMarkSeenWhenOwner(ticket, owner);
   const backTo = isAdmin(user) ? '/admin/tickets' : '/tickets';
 
   if (isPending) {
@@ -90,7 +118,8 @@ export default function TicketDetailPage() {
   }
 
   const admin = isAdmin(user);
-  const canEditPriority = isOwner(ticket, user) || admin;
+  const canEditPriority = owner || admin;
+  const closed = ticket.status === 'résolu';
 
   return (
     <>
@@ -107,8 +136,11 @@ export default function TicketDetailPage() {
       <div className="grid items-start gap-6 lg:grid-cols-[1fr_18rem]">
         <section className="grid min-w-0 gap-4" aria-label="Conversation">
           <MessageThread ticket={ticket} currentUser={user} />
-          <TicketStateNote ticket={ticket} admin={admin} />
-          <ReplyForm ticketId={ticket._id} />
+          {closed ? (
+            <ClosedTicketNote ticket={ticket} owner={owner} admin={admin} />
+          ) : (
+            <ReplyForm ticketId={ticket._id} />
+          )}
         </section>
 
         <aside className="lg:sticky lg:top-20" aria-label="Ticket details">

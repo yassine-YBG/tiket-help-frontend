@@ -2,10 +2,31 @@ import { NavLink } from 'react-router';
 import { TicketIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/features/auth/useAuth';
+import { useTicketSummary } from '@/features/tickets/hooks/useTickets';
 import { visibleSections } from './navigation';
+
+const COUNTER_LABELS = {
+  newAnswers: (n) => `${n} ticket${n > 1 ? 's' : ''} with a new answer`,
+  needsReply: (n) => `${n} ticket${n > 1 ? 's' : ''} waiting for a support reply`,
+};
+
+// Small red number next to a menu item (hidden when 0)
+function Counter({ name, value }) {
+  if (!value) return null;
+  return (
+    <span
+      className="ml-auto min-w-5 rounded-full bg-destructive px-1.5 text-center text-xs font-semibold leading-5 text-white"
+      aria-label={COUNTER_LABELS[name](value)}
+      title={COUNTER_LABELS[name](value)}
+    >
+      {value > 99 ? '99+' : value}
+    </span>
+  );
+}
 
 export function Sidebar({ onNavigate }) {
   const { user } = useAuth();
+  const { data: summary } = useTicketSummary({ enabled: !!user });
 
   return (
     <nav className="flex h-full flex-col gap-6 bg-sidebar px-3 py-4 text-sidebar-foreground" aria-label="Main">
@@ -21,7 +42,7 @@ export function Sidebar({ onNavigate }) {
           <p className="px-2 pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
             {section.title}
           </p>
-          {section.items.map(({ to, label, icon: Icon, end }) => (
+          {section.items.map(({ to, label, icon: Icon, end, counter }) => (
             <NavLink
               key={to}
               to={to}
@@ -37,6 +58,7 @@ export function Sidebar({ onNavigate }) {
             >
               <Icon className="size-4" />
               {label}
+              {counter && <Counter name={counter} value={summary?.[counter]} />}
             </NavLink>
           ))}
         </div>

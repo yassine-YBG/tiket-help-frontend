@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 import { AlertCircleIcon } from 'lucide-react';
@@ -23,8 +23,19 @@ const required = (label) => ({
   validate: (value) => !!value.trim() || `${label} is required`,
 });
 
+const EMPTY_TICKET = { subject: '', category: '', priority: 'normal', description: '' };
+
+// "Open a new ticket" from a closed ticket: pre-fill the subject and point to the old ticket
+function followUpValues(followUp) {
+  if (!followUp?.id || typeof followUp.subject !== 'string') return {};
+  const subject = `Follow-up: ${followUp.subject}`.slice(0, LIMITS.subject);
+  const link = `${window.location.origin}/tickets/${encodeURIComponent(followUp.id)}`;
+  return { subject, description: `Follow-up of my previous ticket: ${link}\n\n` };
+}
+
 export default function NewTicketPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const createTicket = useCreateTicket();
   const [files, setFiles] = useState([]);
@@ -35,7 +46,7 @@ export default function NewTicketPage() {
     control,
     handleSubmit,
     formState: { errors },
-  } = useForm({ defaultValues: { subject: '', category: '', priority: 'normal', description: '' } });
+  } = useForm({ defaultValues: { ...EMPTY_TICKET, ...followUpValues(location.state?.followUp) } });
 
   const description = useWatch({ control, name: 'description' });
   const priority = useWatch({ control, name: 'priority' });
