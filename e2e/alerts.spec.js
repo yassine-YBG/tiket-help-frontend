@@ -72,3 +72,35 @@ test('the full conversation: each side sees when the other one wrote', async ({ 
   await user.context().close();
   await admin.context().close();
 });
+
+test('the refresh button shows new data without reloading the page', async ({ page, request, loginAs }) => {
+  const { accounts, apiUrl } = fixtures();
+  await loginAs('admin');
+  await page.goto('/admin/tickets?search=Refresh+button');
+  await expect(page.getByText('No ticket matches these filters')).toBeVisible();
+  await page.getByLabel('Filter by reply').click();
+  await page.getByRole('option', { name: 'Needs reply' }).click();
+
+  // a user writes from another computer
+  const res = await request.post(`${apiUrl}/tickets/create`, {
+    ...api(accounts.alerts),
+    multipart: { subject: 'Refresh button test', category: 'Software', description: 'New!' },
+  });
+  expect(res.status()).toBe(201);
+
+  await page.getByRole('button', { name: 'Refresh' }).click();
+  await expect(page.getByRole('link', { name: 'Refresh button test' })).toBeVisible();
+  // same page, filters kept
+  await expect(page).toHaveURL(/search=Refresh/);
+  await expect(page).toHaveURL(/awaitingSupport=true/);
+  await expect(page.getByLabel('Search tickets')).toHaveValue('Refresh button');
+});
+
+test('the refresh button is there for a normal user too, and keeps a reply being typed', async ({ page, loginAs }) => {
+  await loginAs('user');
+  await page.goto('/tickets/new');
+  await page.getByLabel('Subject').fill('Typed but not sent');
+  await page.getByRole('button', { name: 'Refresh' }).click();
+  await expect(page.getByRole('button', { name: 'Refresh' })).toBeEnabled();
+  await expect(page.getByLabel('Subject')).toHaveValue('Typed but not sent');
+});
