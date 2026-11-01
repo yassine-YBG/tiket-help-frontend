@@ -13,6 +13,7 @@ import { MessageThread } from '../components/MessageThread';
 import { ReplyForm } from '../components/ReplyForm';
 import { TicketDetailsPanel } from '../components/TicketDetailsPanel';
 import { AdminTicketActions } from '../components/AdminTicketActions';
+import { RefreshButton } from '@/components/layout/RefreshButton';
 import { StatusBadge } from '../components/StatusBadge';
 import { PriorityBadge } from '../components/PriorityBadge';
 import { hasNewAnswer, isOwner } from '../ticketUtils';
@@ -125,7 +126,10 @@ export default function TicketDetailPage() {
     <>
       <BackLink to={backTo} />
       <div className="mb-6 grid gap-2">
-        <h1 className="break-words text-2xl font-semibold tracking-tight">{ticket.subject}</h1>
+        <div className="flex items-start justify-between gap-4">
+          <h1 className="min-w-0 break-words text-2xl font-semibold tracking-tight">{ticket.subject}</h1>
+          <RefreshButton className="shrink-0" />
+        </div>
         <div className="flex flex-wrap items-center gap-2">
           <StatusBadge status={ticket.status} />
           <PriorityBadge priority={ticket.priority} />

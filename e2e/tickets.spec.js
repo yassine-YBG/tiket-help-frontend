@@ -70,7 +70,7 @@ test.describe('ticket page', () => {
     await page.getByLabel('Attach files').setInputFiles(path.join(FILES, 'notes.txt'));
     await send.click();
     await expect(page.getByText('Reply sent')).toBeVisible();
-    await expect(page.getByText('Here are my notes')).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Conversation' }).getByText('Here are my notes')).toBeVisible();
     await expect(page.getByLabel('Your reply')).toHaveValue('');
 
     const downloadPromise = page.waitForEvent('download');
@@ -89,7 +89,7 @@ test.describe('ticket page', () => {
     await expect(page.getByRole('option')).toHaveText(['Low', 'Normal', 'High']);
     await page.getByRole('option', { name: 'High' }).click();
     await expect(page.getByText('Priority changed to High')).toBeVisible();
-    await expect(page.locator('h1 + div')).toContainText('High');
+    await expect(page.getByRole('main').locator('div:has(> h1) + div')).toContainText('High');
   });
 
   test('support sets Urgent; the owner then sees it and can lower it', async ({ page, request, loginAs }) => {

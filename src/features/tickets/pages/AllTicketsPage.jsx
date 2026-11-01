@@ -84,6 +84,7 @@ export default function AllTicketsPage() {
   return (
     <>
       <PageHeader
+        refreshable
         title="All tickets"
         description="Every ticket: filter, assign and resolve. Archived tickets are hidden unless you ask for them."
       />

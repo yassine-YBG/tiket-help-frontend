@@ -27,6 +27,7 @@ export default function MyTicketsPage() {
   return (
     <>
       <PageHeader
+        refreshable
         title="My tickets"
         description="Follow the tickets you have opened."
         actions={newTicketButton}

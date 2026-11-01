@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/features/auth/useAuth';
 import { ROLE_LABELS } from '@/lib/constants';
-import { RefreshButton } from './RefreshButton';
 
 export function Topbar({ onOpenMenu }) {
   const { user, logout } = useAuth();
@@ -15,7 +14,6 @@ export function Topbar({ onOpenMenu }) {
       </Button>
 
       <div className="ml-auto flex items-center gap-3">
-        <RefreshButton />
         <div className="hidden text-right sm:block">
           <p className="text-sm font-medium leading-tight">
             {user.username} {user.lastname}

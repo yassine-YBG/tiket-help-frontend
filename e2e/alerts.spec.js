@@ -32,7 +32,7 @@ test('the full conversation: each side sees when the other one wrote', async ({ 
   await row.getByRole('link', { name: 'Alerts flow' }).click();
   await admin.getByLabel('Your reply').fill('Which version do you use?');
   await admin.getByRole('button', { name: 'Send reply' }).click();
-  await expect(admin.getByText('Which version do you use?')).toBeVisible();
+  await expect(admin.getByRole('region', { name: 'Conversation' }).getByText('Which version do you use?')).toBeVisible();
   await admin.goto('/admin/tickets?awaitingSupport=true&search=Alerts+flow');
   await expect(admin.getByText('No ticket matches these filters')).toBeVisible();
 
@@ -51,7 +51,7 @@ test('the full conversation: each side sees when the other one wrote', async ({ 
   await user.getByRole('link', { name: 'Alerts flow' }).click();
   await user.getByLabel('Your reply').fill('Version 2.1');
   await user.getByRole('button', { name: 'Send reply' }).click();
-  await expect(user.getByText('Version 2.1')).toBeVisible();
+  await expect(user.getByRole('region', { name: 'Conversation' }).getByText('Version 2.1')).toBeVisible();
   await admin.goto('/admin/tickets?awaitingSupport=true&search=Alerts+flow');
   await expect(admin.getByRole('row').filter({ hasText: 'Alerts flow' })).toContainText('Needs reply');
 
@@ -96,11 +96,37 @@ test('the refresh button shows new data without reloading the page', async ({ pa
   await expect(page.getByLabel('Search tickets')).toHaveValue('Refresh button');
 });
 
-test('the refresh button is there for a normal user too, and keeps a reply being typed', async ({ page, loginAs }) => {
-  await loginAs('user');
-  await page.goto('/tickets/new');
-  await page.getByLabel('Subject').fill('Typed but not sent');
+test('next to the ticket title: refresh shows a new reply and keeps the text being typed', async ({ page, request, loginAs }) => {
+  const { accounts, apiUrl } = fixtures();
+  const created = await request.post(`${apiUrl}/tickets/create`, {
+    ...api(accounts.alerts),
+    multipart: { subject: 'Refresh on ticket', category: 'Software', description: 'Hello' },
+  });
+  const id = (await created.json()).ticketId;
+
+  await loginAs('alerts');
+  await page.goto(`/tickets/${id}`);
+  await page.getByLabel('Your reply').fill('Typed but not sent');
+
+  // support answers from another computer
+  await request.post(`${apiUrl}/tickets/reply/${id}`, { ...api(accounts.admin), data: { message: 'Answer from support' } });
+
+  await page.getByRole('button', { name: 'Refresh' }).click();
+  await expect(page.getByText('Answer from support')).toBeVisible();
+  await expect(page.getByText('Updated', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('Your reply')).toHaveValue('Typed but not sent');
+
+  // nothing new -> "Already up to date"
+  // (opening the answer marks it seen, so let that settle with one more refresh first)
   await page.getByRole('button', { name: 'Refresh' }).click();
   await expect(page.getByRole('button', { name: 'Refresh' })).toBeEnabled();
-  await expect(page.getByLabel('Subject')).toHaveValue('Typed but not sent');
+  await page.getByRole('button', { name: 'Refresh' }).click();
+  await expect(page.getByText('Already up to date')).toBeVisible();
+});
+
+test('the refresh button is next to the title of My tickets, not in the top bar', async ({ page, loginAs }) => {
+  await loginAs('user');
+  await page.goto('/tickets');
+  await expect(page.getByRole('banner').getByRole('button', { name: 'Refresh' })).toHaveCount(0);
+  await expect(page.getByRole('main').getByRole('button', { name: 'Refresh' })).toBeVisible();
 });
