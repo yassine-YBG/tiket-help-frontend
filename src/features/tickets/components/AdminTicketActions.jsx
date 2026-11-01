@@ -118,10 +118,12 @@ function ArchiveButton({ ticket }) {
 function RestoreButton({ ticket }) {
   const restore = useUnarchiveTicket(ticket._id);
   const onClick = () =>
-    restore.mutate(undefined, {
-      onSuccess: () => toast.success('Ticket restored to the All tickets list'),
-      onError: (error) => toast.error(getErrorMessage(error)),
-    });
+    // mutateAsync (not mutate + onSuccess): this button disappears as soon as the
+    // ticket is restored, and mutate's callbacks are skipped once it is gone.
+    restore.mutateAsync().then(
+      () => toast.success('Ticket restored to the All tickets list'),
+      (error) => toast.error(getErrorMessage(error))
+    );
 
   return (
     <Button variant="outline" onClick={onClick} disabled={restore.isPending} className="w-full">
