@@ -19,6 +19,31 @@ const ASSIGNEE_OPTIONS = [
   ['none', 'Not assigned'],
 ];
 
+// values of the backend ?archived= filter (no value = archived tickets hidden)
+const HIDE_ARCHIVED = 'hide';
+const ARCHIVED_OPTIONS = [
+  [HIDE_ARCHIVED, 'Hide archived'],
+  ['only', 'Archived only'],
+  ['include', 'Include archived'],
+];
+
+function ArchivedFilter({ value, onChange }) {
+  return (
+    <Select value={value || HIDE_ARCHIVED} onValueChange={(next) => onChange(next === HIDE_ARCHIVED ? '' : next)}>
+      <SelectTrigger aria-label="Archived tickets" className="w-[160px]">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {ARCHIVED_OPTIONS.map(([option, label]) => (
+          <SelectItem key={option} value={option}>
+            {label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
 function AssigneeFilter({ value, onChange }) {
   return (
     <Select value={value || ANYONE} onValueChange={(next) => onChange(next === ANYONE ? '' : next)}>
@@ -43,7 +68,10 @@ export default function AllTicketsPage() {
 
   return (
     <>
-      <PageHeader title="All tickets" description="Every ticket: filter, assign and resolve." />
+      <PageHeader
+        title="All tickets"
+        description="Every ticket: filter, assign and resolve. Archived tickets are hidden unless you ask for them."
+      />
       <Card className="gap-4 py-4">
         <CardContent className="grid gap-4 px-4">
           <TicketFilters
@@ -53,13 +81,14 @@ export default function AllTicketsPage() {
             activeCount={activeCount}
           >
             <AssigneeFilter value={filters.handledBy} onChange={(handledBy) => setFilters({ handledBy })} />
+            <ArchivedFilter value={filters.archived} onChange={(archived) => setFilters({ archived })} />
           </TicketFilters>
           <TicketListBody
             query={query}
             activeCount={activeCount}
             resetFilters={resetFilters}
             onPageChange={(page) => setFilters({ page })}
-            showCreator
+            adminView
             emptyState={
               <EmptyState icon={InboxIcon} title="No tickets yet" description="New tickets from users will appear here." />
             }

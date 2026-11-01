@@ -124,9 +124,9 @@ npx shadcn@latest add dialog select table
 | ✅ | Login, Register | visitors | `/login`, `/register` |
 | ✅ | My tickets | everyone | `/tickets` |
 | ✅ | New ticket | everyone | `/tickets/new` |
-| ✅ | Ticket detail (admins: assign / take over, status, delete) | owner, admins | `/tickets/:id` |
+| ✅ | Ticket detail (admins: assign / take over, status, archive / restore) | owner, admins | `/tickets/:id` |
 | ✅ | Profile | everyone | `/profile` |
 | 🔜 | Dashboard | admins | `/admin/dashboard` |
-| ✅ | All tickets (filters incl. assignee) | admins | `/admin/tickets` |
+| ✅ | All tickets (filters incl. assignee, archived) | admins | `/admin/tickets` |
 | 🔜 | Users, Pending accounts | admins | `/admin/users`, `/admin/users/pending` |
 | 🔜 | Activity logs | admins | `/admin/activity` |

@@ -1,4 +1,4 @@
-// Admin side of tickets: all-tickets list, assign / take over, status, delete
+// Admin side of tickets: all-tickets list, assign / take over, status, archive
 import { test, expect, fixtures } from './fixtures';
 
 const api = (account) => ({ headers: { Authorization: `Bearer ${account.token}` } });
@@ -91,27 +91,79 @@ test.describe('admin actions on a ticket', () => {
     await expect(page.getByText('You are handling this ticket')).toBeVisible();
   });
 
-  test('delete with its files: gone for the admin and for the owner', async ({ page, request, loginAs }) => {
+  test('archive: only a resolved ticket; the owner keeps it; an owner reply brings it back', async ({ page, request, loginAs }) => {
     const { accounts, apiUrl } = fixtures();
-    const id = await apiCreateTicket(request, accounts.user, { subject: 'Delete me' }, 'delete-me.txt');
+    const id = await apiCreateTicket(request, accounts.user, { subject: 'Archive flow' }, 'kept.txt');
     await loginAs('admin');
     await page.goto(`/tickets/${id}`);
 
-    await page.getByRole('button', { name: 'Delete ticket' }).click();
+    // not resolved yet -> no archive button
+    await page.getByRole('button', { name: 'Assign to me' }).click();
+    await expect(page.getByText('Resolve the ticket to be able to archive it.')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Archive ticket' })).toHaveCount(0);
+
+    await page.getByLabel('Change status').click();
+    await page.getByRole('option', { name: 'Resolved' }).click();
+    await page.getByRole('button', { name: 'Archive ticket' }).click();
     const dialog = page.getByRole('alertdialog');
-    const alsoFiles = dialog.getByLabel(/also delete the 1 attached file/i);
-    await expect(alsoFiles).not.toBeChecked();
-    await alsoFiles.check();
-    await dialog.getByRole('button', { name: 'Delete' }).click();
+    await expect(dialog).toContainText('The user still sees it');
+    await dialog.getByRole('button', { name: 'Archive' }).click();
 
+    // back on the list, where the ticket is hidden...
     await expect(page).toHaveURL(/\/admin\/tickets$/);
-    await expect(page.getByText('Ticket deleted and 1 file(s)')).toBeVisible();
+    await expect(page.getByText('Ticket archived')).toBeVisible();
+    await page.getByLabel('Search tickets').fill('Archive flow');
+    await expect(page.getByText('No ticket matches these filters')).toBeVisible();
+    // ...unless asked for
+    await page.getByLabel('Archived tickets').click();
+    await page.getByRole('option', { name: 'Archived only' }).click();
+    const row = page.getByRole('row').filter({ hasText: 'Archive flow' });
+    await expect(row).toContainText('Archived');
 
-    // the owner can't open it any more
-    const res = await request.get(`${apiUrl}/tickets/${id}`, api(accounts.user));
-    expect(res.status()).toBe(404);
+    // the owner still sees it, marked "Closed by support", with its file
+    const ownerView = await request.get(`${apiUrl}/tickets/${id}`, api(accounts.user));
+    expect(ownerView.status()).toBe(200);
+    expect((await ownerView.json()).archived).toBe(true);
+    const mine = await (await request.get(`${apiUrl}/tickets/my?search=Archive+flow`, api(accounts.user))).json();
+    expect(mine.tickets.map((t) => t._id)).toContain(id);
+
+    // the owner replies -> back in the admin list
+    const reply = await request.post(`${apiUrl}/tickets/reply/${id}`, { ...api(accounts.user), data: { message: 'Still broken' } });
+    expect(reply.status()).toBe(200);
+    // (the reply came from another computer: the admin sees it after a refresh, or within 30 s)
+    await page.goto('/admin/tickets?search=Archive+flow');
+    await expect(page.getByRole('link', { name: 'Archive flow' })).toBeVisible();
+  });
+
+  test('the owner sees "Closed by support" and can reply', async ({ page, request, loginAs }) => {
+    const { accounts, apiUrl } = fixtures();
+    const id = await apiCreateTicket(request, accounts.user, { subject: 'Closed note' });
+    await request.put(`${apiUrl}/tickets/status/${id}`, { ...api(accounts.admin), data: { status: 'résolu' } });
+    expect((await request.put(`${apiUrl}/tickets/archive/${id}`, api(accounts.admin))).status()).toBe(200);
+
+    await loginAs('user');
+    await page.goto('/tickets?search=Closed+note');
+    await expect(page.getByRole('row').filter({ hasText: 'Closed note' })).toContainText('Closed by support');
+    await page.getByRole('link', { name: 'Closed note' }).click();
+    await expect(page.getByRole('note')).toContainText('Closed by support');
+    await page.getByLabel('Your reply').fill('It happened again');
+    await page.getByRole('button', { name: 'Send reply' }).click();
+    await expect(page.getByText('It happened again')).toBeVisible();
+    await expect(page.getByRole('note')).not.toContainText('Closed by support'); // back to support
+  });
+
+  test('another admin cannot archive or restore; a superadmin can restore', async ({ page, request, loginAs }) => {
+    const { accounts, apiUrl } = fixtures();
+    const id = await apiCreateTicket(request, accounts.user, { subject: 'Restore test' });
+    await request.put(`${apiUrl}/tickets/status/${id}`, { ...api(accounts.admin), data: { status: 'résolu' } });
+    expect((await request.put(`${apiUrl}/tickets/archive/${id}`, api(accounts.superadmin))).status()).toBe(200);
+
+    await loginAs('superadmin');
     await page.goto(`/tickets/${id}`);
-    await expect(page.getByText('Ticket not found')).toBeVisible();
+    await expect(page.getByText('Archived — hidden from the All tickets list')).toBeVisible();
+    await page.getByRole('button', { name: 'Restore ticket' }).click();
+    await expect(page.getByText('Ticket restored to the All tickets list')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Restore ticket' })).toHaveCount(0);
   });
 
   test('a normal user sees none of these actions', async ({ page, request, loginAs }) => {
@@ -121,7 +173,7 @@ test.describe('admin actions on a ticket', () => {
     await expect(page.getByRole('heading', { name: 'No admin buttons' })).toBeVisible();
     await expect(page.getByLabel('Change status')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Assign to me' })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Delete ticket' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Archive ticket' })).toHaveCount(0);
   });
 
   test('the backend refuses admin actions from a normal user (even without the UI)', async ({ request }) => {
@@ -130,7 +182,8 @@ test.describe('admin actions on a ticket', () => {
     const asUser = api(accounts.user);
     expect((await request.put(`${apiUrl}/tickets/status/${id}`, { ...asUser, data: { status: 'résolu' } })).status()).toBe(403);
     expect((await request.put(`${apiUrl}/tickets/assign/${id}`, asUser)).status()).toBe(403);
-    expect((await request.delete(`${apiUrl}/tickets/${id}`, asUser)).status()).toBe(403);
+    expect((await request.put(`${apiUrl}/tickets/archive/${id}`, asUser)).status()).toBe(403);
+    expect((await request.put(`${apiUrl}/tickets/unarchive/${id}`, asUser)).status()).toBe(403);
     expect((await request.get(`${apiUrl}/tickets`, asUser)).status()).toBe(403);
   });
 });

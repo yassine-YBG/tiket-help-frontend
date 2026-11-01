@@ -71,4 +71,21 @@ describe('AllTicketsPage', () => {
     setup();
     expect(await screen.findByText('No tickets yet')).toBeInTheDocument();
   });
+
+  it('archived tickets: filter sent to the API and an "Archived" label on the row', async () => {
+    vi.mocked(ticketsApi.listAll).mockResolvedValue(page([{ ...tickets[1], status: 'résolu', archived: true }]));
+    setup('/admin/tickets?archived=only');
+    await screen.findByRole('link', { name: 'Login loop' });
+    expect(screen.getByLabelText('Archived tickets')).toHaveTextContent('Archived only');
+    expect(screen.getByText('Archived')).toBeInTheDocument();
+    expect(ticketsApi.listAll).toHaveBeenCalledWith(expect.objectContaining({ archived: 'only' }));
+  });
+
+  it('by default archived tickets are hidden (no "archived" sent)', async () => {
+    vi.mocked(ticketsApi.listAll).mockResolvedValue(page(tickets));
+    setup();
+    await screen.findByRole('link', { name: 'Payment refused' });
+    expect(screen.getByLabelText('Archived tickets')).toHaveTextContent('Hide archived');
+    expect(ticketsApi.listAll.mock.calls[0][0]).not.toHaveProperty('archived');
+  });
 });

@@ -1,5 +1,5 @@
 import { Link, useParams } from 'react-router';
-import { ArrowLeftIcon, LockIcon, SearchXIcon } from 'lucide-react';
+import { ArchiveIcon, ArrowLeftIcon, LockIcon, SearchXIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/feedback/EmptyState';
@@ -15,6 +15,25 @@ import { AdminTicketActions } from '../components/AdminTicketActions';
 import { StatusBadge } from '../components/StatusBadge';
 import { PriorityBadge } from '../components/PriorityBadge';
 import { isOwner } from '../ticketUtils';
+
+// Short note above the reply box for resolved / archived tickets
+function TicketStateNote({ ticket, admin }) {
+  let text = null;
+  if (ticket.archived) {
+    text = admin
+      ? 'This ticket is archived: it is hidden from the All tickets list. It comes back if the user replies.'
+      : 'Closed by support. Reply if you still need help — the support team will see your message.';
+  } else if (ticket.status === 'résolu') {
+    text = 'This ticket is resolved. You can still reply if the problem comes back.';
+  }
+  if (!text) return null;
+  return (
+    <p role="note" className="flex items-start gap-2 rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
+      {ticket.archived && <ArchiveIcon className="mt-0.5 size-4 shrink-0" />}
+      {text}
+    </p>
+  );
+}
 
 function BackLink({ to }) {
   return (
@@ -88,11 +107,7 @@ export default function TicketDetailPage() {
       <div className="grid items-start gap-6 lg:grid-cols-[1fr_18rem]">
         <section className="grid min-w-0 gap-4" aria-label="Conversation">
           <MessageThread ticket={ticket} currentUser={user} />
-          {ticket.status === 'résolu' && (
-            <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
-              This ticket is resolved. You can still reply if the problem comes back.
-            </p>
-          )}
+          <TicketStateNote ticket={ticket} admin={admin} />
           <ReplyForm ticketId={ticket._id} />
         </section>
 
