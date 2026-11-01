@@ -88,4 +88,15 @@ describe('AllTicketsPage', () => {
     expect(screen.getByLabelText('Archived tickets')).toHaveTextContent('Hide archived');
     expect(ticketsApi.listAll.mock.calls[0][0]).not.toHaveProperty('archived');
   });
+
+  it('"Needs reply" badge and filter', async () => {
+    vi.mocked(ticketsApi.listAll).mockResolvedValue(page([{ ...tickets[1], awaitingSupport: true }]));
+    setup();
+    expect(await screen.findByText('Needs reply', { selector: 'span' })).toBeInTheDocument();
+    await userEvent.click(screen.getByLabelText('Filter by reply'));
+    await userEvent.click(await screen.findByRole('option', { name: 'Needs reply' }));
+    await waitFor(() =>
+      expect(ticketsApi.listAll).toHaveBeenLastCalledWith(expect.objectContaining({ awaitingSupport: 'true' }))
+    );
+  });
 });

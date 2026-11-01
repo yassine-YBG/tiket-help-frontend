@@ -77,4 +77,23 @@ describe('NewTicketPage', () => {
     await userEvent.click(screen.getByLabelText('Priority'));
     expect(screen.getByRole('option', { name: 'Urgent' })).toBeInTheDocument();
   });
+
+  it('a follow-up of a closed ticket starts with the subject and a link to it', async () => {
+    renderWithProviders(<NewTicketPage />, {
+      route: { pathname: '/tickets/new', state: { followUp: { id: 'abc123', subject: 'Cannot export MP3' } } },
+      path: '/tickets/new',
+      user: testUsers.user,
+    });
+    expect(screen.getByLabelText('Subject')).toHaveValue('Follow-up: Cannot export MP3');
+    expect(screen.getByLabelText('Description').value).toMatch(/^Follow-up of my previous ticket: http.*\/tickets\/abc123/);
+  });
+
+  it('a very long subject still fits the 150-character limit', () => {
+    renderWithProviders(<NewTicketPage />, {
+      route: { pathname: '/tickets/new', state: { followUp: { id: 'x', subject: 'a'.repeat(150) } } },
+      path: '/tickets/new',
+      user: testUsers.user,
+    });
+    expect(screen.getByLabelText('Subject').value).toHaveLength(150);
+  });
 });

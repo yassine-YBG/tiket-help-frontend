@@ -14,6 +14,8 @@ vi.mock('@/api/tickets.api', () => ({
     assignToMe: vi.fn(),
     archive: vi.fn(),
     unarchive: vi.fn(),
+    markSeen: vi.fn(),
+    summary: vi.fn(),
     downloadAttachment: vi.fn(),
   },
 }));
@@ -192,17 +194,54 @@ describe('TicketDetailPage', () => {
       vi.mocked(ticketsApi.get).mockResolvedValue({ ...ticket, status: 'résolu', archived: true });
       vi.mocked(ticketsApi.unarchive).mockResolvedValue({ message: 'Ticket restored' });
       setup(testUsers.admin);
-      expect(await screen.findByText(/hidden from the All tickets list\. It comes back/)).toBeInTheDocument();
+      expect(await screen.findByText(/hidden from the All tickets list\. Restore it/)).toBeInTheDocument();
+      expect(screen.queryByLabelText('Your reply')).not.toBeInTheDocument();
       await userEvent.click(screen.getByRole('button', { name: 'Restore ticket' }));
       await waitFor(() => expect(ticketsApi.unarchive).toHaveBeenCalledWith('t1'));
     });
   });
 
-  it('the owner sees "Closed by support" on an archived ticket and can still reply', async () => {
+  it('the owner sees "Closed by support" on an archived ticket, cannot reply, can open a follow-up', async () => {
     vi.mocked(ticketsApi.get).mockResolvedValue({ ...ticket, status: 'résolu', archived: true });
     setup();
-    expect(await screen.findByText(/Closed by support\. Reply if you still need help/)).toBeInTheDocument();
-    expect(screen.getByLabelText('Your reply')).toBeEnabled();
+    expect(await screen.findByText(/Closed by support\. If you still need help, open a new ticket/)).toBeInTheDocument();
+    expect(screen.queryByLabelText('Your reply')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Open a new ticket' })).toHaveAttribute('href', '/tickets/new');
     expect(screen.queryByRole('button', { name: 'Restore ticket' })).not.toBeInTheDocument();
+  });
+
+  it('a resolved ticket is closed for the admin too', async () => {
+    vi.mocked(ticketsApi.get).mockResolvedValue({ ...ticket, status: 'résolu' });
+    setup(testUsers.admin);
+    expect(await screen.findByText(/Set the status back to In progress to write in it/)).toBeInTheDocument();
+    expect(screen.queryByLabelText('Your reply')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Open a new ticket' })).not.toBeInTheDocument();
+  });
+
+  describe('"New answer" alert', () => {
+    const answered = { ...ticket, supportUpdatedAt: '2026-10-01T11:00:00Z', ownerSeenAt: '2026-10-01T10:30:00Z' };
+
+    it('the owner opening a ticket with a new answer marks it seen (once)', async () => {
+      vi.mocked(ticketsApi.get).mockResolvedValue(answered);
+      vi.mocked(ticketsApi.markSeen).mockResolvedValue({ ownerSeenAt: '2026-10-01T12:00:00Z' });
+      setup();
+      await screen.findByRole('heading', { name: 'Cannot export MP3' });
+      await waitFor(() => expect(ticketsApi.markSeen).toHaveBeenCalledWith('t1'));
+      expect(ticketsApi.markSeen).toHaveBeenCalledTimes(1);
+    });
+
+    it('nothing new -> nothing sent', async () => {
+      vi.mocked(ticketsApi.get).mockResolvedValue({ ...answered, ownerSeenAt: '2026-10-01T12:00:00Z' });
+      setup();
+      await screen.findByRole('heading', { name: 'Cannot export MP3' });
+      expect(ticketsApi.markSeen).not.toHaveBeenCalled();
+    });
+
+    it('an admin opening the ticket never marks it seen', async () => {
+      vi.mocked(ticketsApi.get).mockResolvedValue(answered);
+      setup(testUsers.admin);
+      await screen.findByRole('heading', { name: 'Cannot export MP3' });
+      expect(ticketsApi.markSeen).not.toHaveBeenCalled();
+    });
   });
 });

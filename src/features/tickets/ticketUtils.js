@@ -18,3 +18,13 @@ export const nameOf = (person) => (person && typeof person === 'object' ? person
 export const countAttachments = (ticket) =>
   (ticket.attachments?.length || 0) +
   (ticket.messages || []).reduce((n, m) => n + (m.attachments?.length || 0), 0);
+
+// ---- Alerts: who must act next (fields set by the backend) ----
+
+// Admin view: the owner wrote last and support has not answered yet
+export const needsReply = (ticket) => !!ticket.awaitingSupport && ticket.status !== 'résolu' && !ticket.archived;
+
+// Owner view: support replied or changed the status since the owner last opened the ticket
+export const hasNewAnswer = (ticket) =>
+  !!ticket.supportUpdatedAt &&
+  (!ticket.ownerSeenAt || new Date(ticket.supportUpdatedAt) > new Date(ticket.ownerSeenAt));

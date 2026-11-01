@@ -41,21 +41,51 @@ export function useTicket(id) {
   });
 }
 
+// Menu counters ("Needs reply" for admins, "New answer" for users).
+// Refreshed every 30 s while the tab is visible, and after every ticket change.
+export function useTicketSummary({ enabled = true } = {}) {
+  return useQuery({
+    queryKey: queryKeys.tickets.summary(),
+    queryFn: ticketsApi.summary,
+    enabled,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
+  });
+}
+
 export function useCreateTicket() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ data, files }) => ticketsApi.create(data, files),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.tickets.lists() }),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.tickets.lists() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.tickets.summary() }),
+      ]),
   });
 }
 
-// After any change to a ticket: refresh this ticket and every list
+// The owner opened a ticket with a new answer: clear the alert (lists + counter)
+export function useMarkSeen() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => ticketsApi.markSeen(id),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.tickets.lists() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.tickets.summary() }),
+      ]),
+  });
+}
+
+// After any change to a ticket: refresh this ticket, every list and the menu counters
 function useInvalidateTicket(id) {
   const queryClient = useQueryClient();
   return () =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: queryKeys.tickets.detail(id) }),
       queryClient.invalidateQueries({ queryKey: queryKeys.tickets.lists() }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.tickets.summary() }),
     ]);
 }
 

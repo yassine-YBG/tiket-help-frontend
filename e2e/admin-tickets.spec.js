@@ -68,7 +68,12 @@ test.describe('admin actions on a ticket', () => {
     await page.getByRole('option', { name: 'Resolved' }).click();
     await expect(page.getByText('Status changed to Resolved')).toBeVisible();
     await expect(page.getByRole('complementary', { name: 'Ticket details' }).getByText('Resolved', { exact: true }).first()).toBeVisible();
-    await expect(page.getByText('This ticket is resolved.')).toBeVisible();
+    // resolved = closed: no reply box, even for support
+    await expect(page.getByRole('note')).toContainText('Set the status back to In progress to write in it');
+    await expect(page.getByLabel('Your reply')).toHaveCount(0);
+    await page.getByLabel('Change status').click();
+    await page.getByRole('option', { name: 'In progress' }).click();
+    await expect(page.getByLabel('Your reply')).toBeVisible();
   });
 
   test('taking over a ticket another admin handles asks first', async ({ page, request, loginAs }) => {
@@ -91,7 +96,7 @@ test.describe('admin actions on a ticket', () => {
     await expect(page.getByText('You are handling this ticket')).toBeVisible();
   });
 
-  test('archive: only a resolved ticket; the owner keeps it; an owner reply brings it back', async ({ page, request, loginAs }) => {
+  test('archive: only a resolved ticket; the owner keeps it; nobody can write in it', async ({ page, request, loginAs }) => {
     const { accounts, apiUrl } = fixtures();
     const id = await apiCreateTicket(request, accounts.user, { subject: 'Archive flow' }, 'kept.txt');
     await loginAs('admin');
@@ -127,15 +132,12 @@ test.describe('admin actions on a ticket', () => {
     const mine = await (await request.get(`${apiUrl}/tickets/my?search=Archive+flow`, api(accounts.user))).json();
     expect(mine.tickets.map((t) => t._id)).toContain(id);
 
-    // the owner replies -> back in the admin list
+    // a resolved / archived ticket is closed: replies are refused
     const reply = await request.post(`${apiUrl}/tickets/reply/${id}`, { ...api(accounts.user), data: { message: 'Still broken' } });
-    expect(reply.status()).toBe(200);
-    // (the reply came from another computer: the admin sees it after a refresh, or within 30 s)
-    await page.goto('/admin/tickets?search=Archive+flow');
-    await expect(page.getByRole('link', { name: 'Archive flow' })).toBeVisible();
+    expect(reply.status()).toBe(400);
   });
 
-  test('the owner sees "Closed by support" and can reply', async ({ page, request, loginAs }) => {
+  test('the owner sees "Closed by support" and opens a follow-up ticket', async ({ page, request, loginAs }) => {
     const { accounts, apiUrl } = fixtures();
     const id = await apiCreateTicket(request, accounts.user, { subject: 'Closed note' });
     await request.put(`${apiUrl}/tickets/status/${id}`, { ...api(accounts.admin), data: { status: 'résolu' } });
@@ -146,10 +148,15 @@ test.describe('admin actions on a ticket', () => {
     await expect(page.getByRole('row').filter({ hasText: 'Closed note' })).toContainText('Closed by support');
     await page.getByRole('link', { name: 'Closed note' }).click();
     await expect(page.getByRole('note')).toContainText('Closed by support');
-    await page.getByLabel('Your reply').fill('It happened again');
-    await page.getByRole('button', { name: 'Send reply' }).click();
-    await expect(page.getByText('It happened again')).toBeVisible();
-    await expect(page.getByRole('note')).not.toContainText('Closed by support'); // back to support
+    await expect(page.getByLabel('Your reply')).toHaveCount(0);
+
+    await page.getByRole('link', { name: 'Open a new ticket' }).click();
+    await expect(page).toHaveURL(/\/tickets\/new$/);
+    await expect(page.getByLabel('Subject')).toHaveValue('Follow-up: Closed note');
+    await expect(page.getByLabel('Description')).toHaveValue(new RegExp(`/tickets/${id}`));
+    await page.getByLabel('Category').fill('Software');
+    await page.getByRole('button', { name: 'Create ticket' }).click();
+    await expect(page.getByRole('heading', { name: 'Follow-up: Closed note' })).toBeVisible();
   });
 
   test('another admin cannot archive or restore; a superadmin can restore', async ({ page, request, loginAs }) => {
