@@ -10,10 +10,11 @@ import { TicketTable } from './TicketTable';
 // Shared by "My tickets" and "All tickets" so both lists behave the same.
 //   query       result of useTicketList
 //   emptyState  what to show when there are no tickets at all (no filter active)
-export function TicketListBody({ query, activeCount, resetFilters, onPageChange, emptyState, showCreator = false }) {
+//   adminView   admin list: "Created by" column, "Archived" label
+export function TicketListBody({ query, activeCount, resetFilters, onPageChange, emptyState, adminView = false }) {
   const { data, isPending, isError, error, refetch, isPlaceholderData } = query;
 
-  if (isPending) return <TableSkeleton rows={6} columns={showCreator ? 6 : 5} />;
+  if (isPending) return <TableSkeleton rows={6} columns={adminView ? 6 : 5} />;
   if (isError) return <ErrorState error={error} onRetry={refetch} />;
 
   if (data.tickets.length === 0) {
@@ -33,7 +34,7 @@ export function TicketListBody({ query, activeCount, resetFilters, onPageChange,
 
   return (
     <div className={isPlaceholderData ? 'opacity-60 transition-opacity' : undefined}>
-      <TicketTable tickets={data.tickets} showCreator={showCreator} />
+      <TicketTable tickets={data.tickets} adminView={adminView} />
       <Pagination pagination={data.pagination} onPageChange={onPageChange} disabled={isPlaceholderData} />
     </div>
   );

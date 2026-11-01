@@ -11,7 +11,7 @@ function toFormData(fields, files = []) {
 }
 
 export const ticketsApi = {
-  // params: { page, limit, status, priority, category, search, from, to, sort, handledBy, createdBy }
+  // params: { page, limit, status, priority, category, search, from, to, sort, handledBy, createdBy, archived }
   // -> { tickets, pagination, sort }
   listAll: (params) => api.get('/tickets', { params }).then((r) => r.data),
   listMine: (params) => api.get('/tickets/my', { params }).then((r) => r.data),
@@ -29,8 +29,10 @@ export const ticketsApi = {
   updatePriority: (id, priority) => api.put(`/tickets/priority/${id}`, { priority }).then((r) => r.data),
   assignToMe: (id) => api.put(`/tickets/assign/${id}`).then((r) => r.data),
 
-  remove: (id, { deleteFiles = false } = {}) =>
-    api.delete(`/tickets/${id}`, { params: { deleteFiles } }).then((r) => r.data),
+  // "closed by support": hidden from the admin lists, the owner still sees it.
+  // Backend rule: resolved tickets only, by the admin handling it or a superadmin.
+  archive: (id) => api.put(`/tickets/archive/${id}`).then((r) => r.data),
+  unarchive: (id) => api.put(`/tickets/unarchive/${id}`).then((r) => r.data),
 
   // type: 'ticket' (file of the ticket) or 'message' (file of a reply) -> Blob
   downloadAttachment: (ticketId, type, attachmentId) =>

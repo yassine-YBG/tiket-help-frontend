@@ -1,15 +1,16 @@
-import { useId, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
-import { Trash2Icon, UserCheckIcon, UserRoundCogIcon } from 'lucide-react';
+import { ArchiveIcon, ArchiveRestoreIcon, UserCheckIcon, UserRoundCogIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
 import { ConfirmDialog } from '@/components/feedback/ConfirmDialog';
 import { useAuth } from '@/features/auth/useAuth';
+import { ROLES } from '@/lib/constants';
 import { getErrorMessage } from '@/lib/errors';
-import { useAssignToMe, useDeleteTicket, useForgetTicket } from '../hooks/useTickets';
-import { countAttachments, idOf, nameOf } from '../ticketUtils';
+import { useArchiveTicket, useAssignToMe, useUnarchiveTicket } from '../hooks/useTickets';
+import { idOf, nameOf } from '../ticketUtils';
 
 // Who handles the ticket, from the logged-in admin's point of view
 function assignment(ticket, user) {
@@ -70,77 +71,88 @@ function AssignButton({ ticket }) {
   );
 }
 
-function DeleteButton({ ticket }) {
-  const navigate = useNavigate();
-  const remove = useDeleteTicket(ticket._id);
-  const forgetTicket = useForgetTicket();
-  const [open, setOpen] = useState(false);
-  const [deleteFiles, setDeleteFiles] = useState(false);
-  const checkboxId = useId();
-  const files = countAttachments(ticket);
+// Same rule as the backend: the admin handling the ticket, or any superadmin
+function canArchive(ticket, user) {
+  return user.role === ROLES.SUPERADMIN || assignment(ticket, user) === 'me';
+}
 
-  const onOpenChange = (next) => {
-    setOpen(next);
-    if (!next) setDeleteFiles(false); // always start unchecked
-  };
+// "Archive" = closed by support: the ticket leaves the admin lists, the owner keeps it
+function ArchiveButton({ ticket }) {
+  const navigate = useNavigate();
+  const archive = useArchiveTicket(ticket._id);
+  const [open, setOpen] = useState(false);
+
+  if (ticket.status !== 'résolu') {
+    return <p className="text-xs text-muted-foreground">Resolve the ticket to be able to archive it.</p>;
+  }
 
   const onConfirm = async () => {
-    let result;
     try {
-      result = await remove.mutateAsync({ deleteFiles: files > 0 && deleteFiles });
+      await archive.mutateAsync();
     } catch (error) {
       toast.error(getErrorMessage(error));
       throw error; // keeps the dialog open
     }
-    const removed = result?.filesDeleted ? ` and ${result.filesDeleted} file(s)` : '';
-    toast.success(`Ticket deleted${removed}`);
-    // leave the page first, then forget the ticket (so it is not asked for again)
-    await navigate('/admin/tickets', { replace: true });
-    forgetTicket(ticket._id);
+    toast.success('Ticket archived');
+    navigate('/admin/tickets');
   };
 
   return (
     <>
-      <Button variant="ghost" onClick={() => setOpen(true)} className="w-full text-destructive hover:text-destructive">
-        <Trash2Icon />
-        Delete ticket
+      <Button variant="outline" onClick={() => setOpen(true)} className="w-full">
+        <ArchiveIcon />
+        Archive ticket
       </Button>
       <ConfirmDialog
         open={open}
-        onOpenChange={onOpenChange}
-        title="Delete this ticket?"
-        description="It disappears for the user and for the support team. The conversation is kept in the database."
-        confirmLabel="Delete"
-        destructive
+        onOpenChange={setOpen}
+        title="Archive this ticket?"
+        description="It leaves the All tickets list. The user still sees it, marked “Closed by support”. If the user replies, it comes back automatically."
+        confirmLabel="Archive"
         onConfirm={onConfirm}
-      >
-        {files > 0 && (
-          <label htmlFor={checkboxId} className="flex items-start gap-2 text-sm">
-            <input
-              id={checkboxId}
-              type="checkbox"
-              checked={deleteFiles}
-              onChange={(e) => setDeleteFiles(e.target.checked)}
-              className="mt-0.5 size-4 accent-destructive"
-            />
-            <span>
-              Also delete the {files} attached file{files > 1 ? 's' : ''} from the server
-              <span className="block text-muted-foreground">This cannot be undone.</span>
-            </span>
-          </label>
-        )}
-      </ConfirmDialog>
+      />
     </>
+  );
+}
+
+function RestoreButton({ ticket }) {
+  const restore = useUnarchiveTicket(ticket._id);
+  const onClick = () =>
+    restore.mutate(undefined, {
+      onSuccess: () => toast.success('Ticket restored to the All tickets list'),
+      onError: (error) => toast.error(getErrorMessage(error)),
+    });
+
+  return (
+    <Button variant="outline" onClick={onClick} disabled={restore.isPending} className="w-full">
+      {restore.isPending ? <Spinner /> : <ArchiveRestoreIcon />}
+      Restore ticket
+    </Button>
   );
 }
 
 // Support-team actions at the bottom of the details panel (admins only)
 export function AdminTicketActions({ ticket }) {
+  const { user } = useAuth();
+  const mayArchive = canArchive(ticket, user);
+
   return (
     <div className="mt-4 grid gap-2">
       <Separator className="mb-2" />
-      <AssignButton ticket={ticket} />
-      <DeleteButton ticket={ticket} />
+      {ticket.archived ? (
+        <>
+          <p className="flex items-center gap-2 text-sm text-muted-foreground">
+            <ArchiveIcon className="size-4" />
+            Archived — hidden from the All tickets list
+          </p>
+          {mayArchive && <RestoreButton ticket={ticket} />}
+        </>
+      ) : (
+        <>
+          <AssignButton ticket={ticket} />
+          {mayArchive && <ArchiveButton ticket={ticket} />}
+        </>
+      )}
     </div>
   );
 }

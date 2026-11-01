@@ -1,13 +1,17 @@
 import { Link } from 'react-router';
-import { MessageSquareIcon, PaperclipIcon } from 'lucide-react';
+import { ArchiveIcon, MessageSquareIcon, PaperclipIcon } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatDate } from '@/lib/format';
 import { StatusBadge } from './StatusBadge';
 import { PriorityBadge } from './PriorityBadge';
 import { countAttachments, lastActivity, nameOf } from '../ticketUtils';
 
-// List of tickets. `showCreator` adds the "Created by" column (admin list).
-export function TicketTable({ tickets, showCreator = false }) {
+// List of tickets. `adminView` adds the "Created by" column and names archived
+// tickets "Archived" (the owner sees "Closed by support").
+export function TicketTable({ tickets, adminView = false }) {
+  const showCreator = adminView;
+  const archivedLabel = adminView ? 'Archived' : 'Closed by support';
   return (
     <Table>
       <TableHeader>
@@ -34,6 +38,12 @@ export function TicketTable({ tickets, showCreator = false }) {
                   {ticket.subject}
                 </Link>
                 <div className="mt-0.5 flex items-center gap-3 text-xs text-muted-foreground">
+                  {ticket.archived && (
+                    <Badge variant="outline" className="gap-1 px-1.5 py-0 text-[11px]">
+                      <ArchiveIcon className="size-3" />
+                      {archivedLabel}
+                    </Badge>
+                  )}
                   <span className="truncate">{ticket.category}</span>
                   {ticket.messages?.length > 0 && (
                     <span className="flex items-center gap-1" title="Replies">

@@ -12,7 +12,8 @@ vi.mock('@/api/tickets.api', () => ({
     updatePriority: vi.fn(),
     updateStatus: vi.fn(),
     assignToMe: vi.fn(),
-    remove: vi.fn(),
+    archive: vi.fn(),
+    unarchive: vi.fn(),
     downloadAttachment: vi.fn(),
   },
 }));
@@ -101,7 +102,7 @@ describe('TicketDetailPage', () => {
     await screen.findByRole('heading', { name: 'Cannot export MP3' });
     expect(screen.queryByLabelText('Change status')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /assign to me|take over/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Delete ticket' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Archive ticket' })).not.toBeInTheDocument();
   });
 
   describe('admin', () => {
@@ -141,40 +142,67 @@ describe('TicketDetailPage', () => {
       await waitFor(() => expect(ticketsApi.assignToMe).toHaveBeenCalledWith('t1'));
     });
 
-    it('deletes after confirmation, files kept by default, then goes back to the list', async () => {
-      vi.mocked(ticketsApi.get).mockResolvedValue(ticket);
-      vi.mocked(ticketsApi.remove).mockResolvedValue({ message: 'Ticket soft deleted', filesDeleted: 0 });
+    it('a ticket that is not resolved cannot be archived', async () => {
+      vi.mocked(ticketsApi.get).mockResolvedValue(ticket); // en cours, handled by me
       setup(testUsers.admin);
-      await userEvent.click(await screen.findByRole('button', { name: 'Delete ticket' }));
+      expect(await screen.findByText('Resolve the ticket to be able to archive it.')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Archive ticket' })).not.toBeInTheDocument();
+    });
+
+    it('another admin (not the handler) cannot archive', async () => {
+      vi.mocked(ticketsApi.get).mockResolvedValue({ ...ticket, status: 'résolu' });
+      setup(otherAdmin);
+      await screen.findByRole('button', { name: 'Take over' });
+      expect(screen.queryByRole('button', { name: 'Archive ticket' })).not.toBeInTheDocument();
+    });
+
+    it('a superadmin can archive any resolved ticket', async () => {
+      vi.mocked(ticketsApi.get).mockResolvedValue({ ...ticket, status: 'résolu' });
+      setup({ ...otherAdmin, role: 'superadmin' });
+      expect(await screen.findByRole('button', { name: 'Archive ticket' })).toBeInTheDocument();
+    });
+
+    it('the handler archives a resolved ticket after confirmation, then goes back to the list', async () => {
+      vi.mocked(ticketsApi.get).mockResolvedValue({ ...ticket, status: 'résolu' });
+      vi.mocked(ticketsApi.archive).mockResolvedValue({ message: 'Ticket archived' });
+      setup(testUsers.admin);
+      await userEvent.click(await screen.findByRole('button', { name: 'Archive ticket' }));
       const dialog = await screen.findByRole('alertdialog');
-      expect(within(dialog).getByLabelText(/also delete the 1 attached file/i)).not.toBeChecked();
-      await userEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
-      await waitFor(() => expect(ticketsApi.remove).toHaveBeenCalledWith('t1', { deleteFiles: false }));
+      expect(dialog).toHaveTextContent('The user still sees it');
+      expect(ticketsApi.archive).not.toHaveBeenCalled();
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Archive' }));
+      await waitFor(() => expect(ticketsApi.archive).toHaveBeenCalledWith('t1'));
       expect(await screen.findByRole('heading', { name: 'All tickets list' })).toBeInTheDocument();
     });
 
-    it('can also delete the files', async () => {
-      vi.mocked(ticketsApi.get).mockResolvedValue(ticket);
-      vi.mocked(ticketsApi.remove).mockResolvedValue({ message: 'Ticket soft deleted', filesDeleted: 1 });
+    it('a refused archive keeps the dialog open and stays on the ticket', async () => {
+      vi.mocked(ticketsApi.get).mockResolvedValue({ ...ticket, status: 'résolu' });
+      vi.mocked(ticketsApi.archive).mockRejectedValue({ response: { status: 400, data: { error: 'Only resolved tickets can be archived' } } });
       setup(testUsers.admin);
-      await userEvent.click(await screen.findByRole('button', { name: 'Delete ticket' }));
+      await userEvent.click(await screen.findByRole('button', { name: 'Archive ticket' }));
       const dialog = await screen.findByRole('alertdialog');
-      await userEvent.click(within(dialog).getByLabelText(/also delete the 1 attached file/i));
-      await userEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
-      await waitFor(() => expect(ticketsApi.remove).toHaveBeenCalledWith('t1', { deleteFiles: true }));
-    });
-
-    it('a failed delete keeps the dialog open and stays on the ticket', async () => {
-      vi.mocked(ticketsApi.get).mockResolvedValue(ticket);
-      vi.mocked(ticketsApi.remove).mockRejectedValue({ response: { status: 500, data: { error: 'Server error' } } });
-      setup(testUsers.admin);
-      await userEvent.click(await screen.findByRole('button', { name: 'Delete ticket' }));
-      const dialog = await screen.findByRole('alertdialog');
-      await userEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
-      await waitFor(() => expect(ticketsApi.remove).toHaveBeenCalled());
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Archive' }));
+      await waitFor(() => expect(ticketsApi.archive).toHaveBeenCalled());
       expect(screen.getByRole('alertdialog')).toBeInTheDocument();
       // still on the ticket (hidden: the open dialog hides the page from screen readers)
       expect(screen.getByRole('heading', { name: 'Cannot export MP3', hidden: true })).toBeInTheDocument();
     });
+
+    it('an archived ticket shows the note and a Restore button', async () => {
+      vi.mocked(ticketsApi.get).mockResolvedValue({ ...ticket, status: 'résolu', archived: true });
+      vi.mocked(ticketsApi.unarchive).mockResolvedValue({ message: 'Ticket restored' });
+      setup(testUsers.admin);
+      expect(await screen.findByText(/hidden from the All tickets list\. It comes back/)).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Restore ticket' }));
+      await waitFor(() => expect(ticketsApi.unarchive).toHaveBeenCalledWith('t1'));
+    });
+  });
+
+  it('the owner sees "Closed by support" on an archived ticket and can still reply', async () => {
+    vi.mocked(ticketsApi.get).mockResolvedValue({ ...ticket, status: 'résolu', archived: true });
+    setup();
+    expect(await screen.findByText(/Closed by support\. Reply if you still need help/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Your reply')).toBeEnabled();
+    expect(screen.queryByRole('button', { name: 'Restore ticket' })).not.toBeInTheDocument();
   });
 });

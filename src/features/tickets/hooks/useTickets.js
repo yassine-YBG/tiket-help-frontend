@@ -94,19 +94,20 @@ export function useAssignToMe(id) {
   });
 }
 
-// Soft delete. Only the lists are refreshed here: the caller leaves the ticket page
-// first, then forgets the ticket (see forgetTicket), so the page never re-asks for it.
-export function useDeleteTicket(id) {
-  const queryClient = useQueryClient();
+export function useArchiveTicket(id) {
+  const invalidate = useInvalidateTicket(id);
   return useMutation({
-    mutationFn: ({ deleteFiles }) => ticketsApi.remove(id, { deleteFiles }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.tickets.lists() }),
+    mutationFn: () => ticketsApi.archive(id),
+    onSuccess: invalidate,
   });
 }
 
-export function useForgetTicket() {
-  const queryClient = useQueryClient();
-  return (id) => queryClient.removeQueries({ queryKey: queryKeys.tickets.detail(id) });
+export function useUnarchiveTicket(id) {
+  const invalidate = useInvalidateTicket(id);
+  return useMutation({
+    mutationFn: () => ticketsApi.unarchive(id),
+    onSuccess: invalidate,
+  });
 }
 
 // Download an attachment through the API (sends the token), then save it
