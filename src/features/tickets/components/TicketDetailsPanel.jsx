@@ -2,7 +2,8 @@ import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
-import { PRIORITY_LABELS, TICKET_PRIORITIES } from '@/lib/constants';
+import { PRIORITY_DESCRIPTIONS, PRIORITY_LABELS, prioritiesFor } from '@/lib/constants';
+import { useAuth } from '@/features/auth/useAuth';
 import { formatDateTime } from '@/lib/format';
 import { getErrorMessage } from '@/lib/errors';
 import { StatusBadge } from './StatusBadge';
@@ -20,6 +21,7 @@ function Row({ label, children }) {
 
 // Right-hand panel of a ticket: status, priority (editable), category, dates, handler
 export function TicketDetailsPanel({ ticket, canEditPriority, children }) {
+  const { user } = useAuth();
   const updatePriority = useUpdatePriority(ticket._id);
 
   const onPriorityChange = (priority) =>
@@ -46,7 +48,7 @@ export function TicketDetailsPanel({ ticket, canEditPriority, children }) {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {TICKET_PRIORITIES.map((p) => (
+                    {prioritiesFor(user, ticket.priority).map((p) => (
                       <SelectItem key={p} value={p}>
                         {PRIORITY_LABELS[p]}
                       </SelectItem>
@@ -57,6 +59,9 @@ export function TicketDetailsPanel({ ticket, canEditPriority, children }) {
               </div>
             ) : (
               PRIORITY_LABELS[ticket.priority]
+            )}
+            {canEditPriority && (
+              <p className="mt-1 text-xs text-muted-foreground">{PRIORITY_DESCRIPTIONS[ticket.priority]}</p>
             )}
           </Row>
           <Row label="Category">{ticket.category}</Row>

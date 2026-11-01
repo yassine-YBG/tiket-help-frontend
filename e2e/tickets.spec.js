@@ -17,6 +17,14 @@ async function apiCreateTicket(request, account, fields) {
 }
 
 test.describe('new ticket', () => {
+  test('a user sees Low / Normal / High with an explanation, not Urgent', async ({ page, loginAs }) => {
+    await loginAs('user');
+    await page.goto('/tickets/new');
+    await expect(page.getByText('Something does not work as expected')).toBeVisible();
+    await page.getByLabel('Priority').click();
+    await expect(page.getByRole('option')).toHaveText(['Low', 'Normal', 'High']);
+  });
+
   test('the form checks required fields and forbidden files before sending', async ({ page, loginAs }) => {
     await loginAs('user');
     await page.goto('/tickets/new');
@@ -73,14 +81,47 @@ test.describe('ticket page', () => {
     expect(fs.readFileSync(saved, 'utf8')).toBe(fs.readFileSync(path.join(FILES, 'notes.txt'), 'utf8'));
   });
 
-  test('the owner changes the priority', async ({ page, request, loginAs }) => {
+  test('the owner changes the priority (Urgent is not offered to users)', async ({ page, request, loginAs }) => {
     const id = await apiCreateTicket(request, fixtures().accounts.user, { subject: 'Priority test', priority: 'low' });
     await loginAs('user');
     await page.goto(`/tickets/${id}`);
     await page.getByLabel('Change priority').click();
+    await expect(page.getByRole('option')).toHaveText(['Low', 'Normal', 'High']);
+    await page.getByRole('option', { name: 'High' }).click();
+    await expect(page.getByText('Priority changed to High')).toBeVisible();
+    await expect(page.locator('h1 + div')).toContainText('High');
+  });
+
+  test('support sets Urgent; the owner then sees it and can lower it', async ({ page, request, loginAs }) => {
+    const { accounts, apiUrl } = fixtures();
+    const id = await apiCreateTicket(request, accounts.user, { subject: 'Escalated ticket' });
+    // a user cannot raise to urgent through the API either
+    const refused = await request.put(`${apiUrl}/tickets/priority/${id}`, {
+      headers: { Authorization: `Bearer ${accounts.user.token}` },
+      data: { priority: 'urgent' },
+    });
+    expect(refused.status()).toBe(403);
+
+    await loginAs('admin');
+    await page.goto(`/tickets/${id}`);
+    await page.getByLabel('Change priority').click();
     await page.getByRole('option', { name: 'Urgent' }).click();
     await expect(page.getByText('Priority changed to Urgent')).toBeVisible();
-    await expect(page.locator('h1 + div')).toContainText('Urgent');
+  });
+
+  test('the owner of an urgent ticket can lower it', async ({ page, request, loginAs }) => {
+    const { accounts, apiUrl } = fixtures();
+    const id = await apiCreateTicket(request, accounts.user, { subject: 'Was urgent' });
+    await request.put(`${apiUrl}/tickets/priority/${id}`, {
+      headers: { Authorization: `Bearer ${accounts.admin.token}` },
+      data: { priority: 'urgent' },
+    });
+    await loginAs('user');
+    await page.goto(`/tickets/${id}`);
+    await page.getByLabel('Change priority').click();
+    await expect(page.getByRole('option')).toHaveText(['Low', 'Normal', 'High', 'Urgent']);
+    await page.getByRole('option', { name: 'Normal' }).click();
+    await expect(page.getByText('Priority changed to Normal')).toBeVisible();
   });
 
   test('🔒 another user cannot open the ticket', async ({ page, request, loginAs }) => {
@@ -134,10 +175,18 @@ test.describe('my tickets list', () => {
     if ((await existing.json()).pagination.total > 0) return;
     const priorities = ['low', 'normal', 'high', 'urgent'];
     for (let i = 1; i <= 25; i++) {
-      await apiCreateTicket(request, lister, {
+      const priority = priorities[i % 4];
+      // users cannot create urgent tickets: create as high, then support raises it
+      const id = await apiCreateTicket(request, lister, {
         subject: i === 7 ? 'Payment refused by bank' : `Lister ticket ${i}`,
-        priority: priorities[i % 4],
+        priority: priority === 'urgent' ? 'high' : priority,
       });
+      if (priority === 'urgent') {
+        await request.put(`${apiUrl}/tickets/priority/${id}`, {
+          headers: { Authorization: `Bearer ${accounts.admin.token}` },
+          data: { priority: 'urgent' },
+        });
+      }
     }
   });
 

@@ -7,11 +7,11 @@ import NewTicketPage from './NewTicketPage';
 
 vi.mock('@/api/tickets.api', () => ({ ticketsApi: { create: vi.fn() } }));
 
-const setup = () =>
+const setup = (user = testUsers.user) =>
   renderWithProviders(<NewTicketPage />, {
     route: '/tickets/new',
     path: '/tickets/new',
-    user: testUsers.user,
+    user,
     extraRoutes: [{ path: '/tickets/:id', element: <p>Ticket page</p> }],
   });
 
@@ -62,5 +62,19 @@ describe('NewTicketPage', () => {
     await userEvent.type(screen.getByLabelText('Description'), 'C');
     await userEvent.click(screen.getByRole('button', { name: 'Create ticket' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Type de fichier non autorisé');
+  });
+
+  it('a user cannot choose "Urgent"; each level is explained', async () => {
+    setup();
+    expect(screen.getByText('Something does not work as expected')).toBeInTheDocument(); // normal
+    await userEvent.click(screen.getByLabelText('Priority'));
+    const options = screen.getAllByRole('option').map((o) => o.textContent);
+    expect(options).toEqual(['Low', 'Normal', 'High']);
+  });
+
+  it('an admin can choose "Urgent"', async () => {
+    setup(testUsers.admin);
+    await userEvent.click(screen.getByLabelText('Priority'));
+    expect(screen.getByRole('option', { name: 'Urgent' })).toBeInTheDocument();
   });
 });

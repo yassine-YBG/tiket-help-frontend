@@ -12,7 +12,8 @@ import { Spinner } from '@/components/ui/spinner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { FormField } from '@/components/form/FormField';
-import { CATEGORY_SUGGESTIONS, LIMITS, PRIORITY_LABELS, TICKET_PRIORITIES } from '@/lib/constants';
+import { CATEGORY_SUGGESTIONS, LIMITS, PRIORITY_DESCRIPTIONS, PRIORITY_LABELS, prioritiesFor } from '@/lib/constants';
+import { useAuth } from '@/features/auth/useAuth';
 import { getErrorMessage } from '@/lib/errors';
 import { useCreateTicket } from '../hooks/useTickets';
 import { FilePicker } from '../components/FilePicker';
@@ -24,6 +25,7 @@ const required = (label) => ({
 
 export default function NewTicketPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const createTicket = useCreateTicket();
   const [files, setFiles] = useState([]);
   const [serverError, setServerError] = useState(null);
@@ -36,6 +38,7 @@ export default function NewTicketPage() {
   } = useForm({ defaultValues: { subject: '', category: '', priority: 'normal', description: '' } });
 
   const description = useWatch({ control, name: 'description' });
+  const priority = useWatch({ control, name: 'priority' });
   const busy = createTicket.isPending;
 
   const onSubmit = (values) => {
@@ -100,7 +103,7 @@ export default function NewTicketPage() {
                 </datalist>
               </FormField>
 
-              <FormField id="priority" label="Priority">
+              <FormField id="priority" label="Priority" hint={PRIORITY_DESCRIPTIONS[priority]}>
                 <Controller
                   name="priority"
                   control={control}
@@ -110,7 +113,7 @@ export default function NewTicketPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {TICKET_PRIORITIES.map((p) => (
+                        {prioritiesFor(user).map((p) => (
                           <SelectItem key={p} value={p}>
                             {PRIORITY_LABELS[p]}
                           </SelectItem>

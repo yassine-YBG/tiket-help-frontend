@@ -34,6 +34,22 @@ export const PRIORITY_LABELS = {
   urgent: 'Urgent',
 };
 
+// One-line meaning of each level, shown in the forms
+export const PRIORITY_DESCRIPTIONS = {
+  low: 'A question or a small issue, no rush',
+  normal: 'Something does not work as expected',
+  high: 'An important feature is broken or very slow',
+  urgent: 'The service is completely blocked — set by the support team',
+};
+
+// "urgent" is decided by the support team (the backend refuses it from normal users).
+// A user still sees it on a ticket that support already marked urgent, so they can lower it.
+export const SUPPORT_ONLY_PRIORITY = 'urgent';
+export function prioritiesFor(user, currentPriority) {
+  if (isAdmin(user) || currentPriority === SUPPORT_ONLY_PRIORITY) return TICKET_PRIORITIES;
+  return TICKET_PRIORITIES.filter((p) => p !== SUPPORT_ONLY_PRIORITY);
+}
+
 // Same limits as the backend upload middleware
 export const MAX_FILES = 5;
 export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB

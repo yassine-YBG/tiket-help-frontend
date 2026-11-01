@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { getErrorMessage } from './errors';
 import { formatFileSize, formatHours } from './format';
 import { safeFileName } from './downloadFile';
-import { isAdmin } from './constants';
+import { isAdmin, prioritiesFor } from './constants';
 
 describe('getErrorMessage', () => {
   it('uses the backend message', () => {
@@ -51,5 +51,18 @@ describe('isAdmin', () => {
     expect(isAdmin({ role: 'superadmin' })).toBe(true);
     expect(isAdmin({ role: 'user' })).toBe(false);
     expect(isAdmin(null)).toBe(false);
+  });
+});
+
+describe('prioritiesFor (urgent is decided by support)', () => {
+  it('a user can choose low, normal, high', () => {
+    expect(prioritiesFor({ role: 'user' })).toEqual(['low', 'normal', 'high']);
+  });
+  it('a user still sees urgent on a ticket support already marked urgent (to lower it)', () => {
+    expect(prioritiesFor({ role: 'user' }, 'urgent')).toEqual(['low', 'normal', 'high', 'urgent']);
+  });
+  it('admins and superadmins see every level', () => {
+    expect(prioritiesFor({ role: 'admin' })).toContain('urgent');
+    expect(prioritiesFor({ role: 'superadmin' }, 'low')).toContain('urgent');
   });
 });
