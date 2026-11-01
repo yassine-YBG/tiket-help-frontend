@@ -13,3 +13,8 @@ export const isOwner = (ticket, user) => !!user && idOf(ticket.createdBy) === us
 
 // Display name of a populated user
 export const nameOf = (person) => (person && typeof person === 'object' ? person.username : 'Unknown user');
+
+// Number of files on a ticket: its own attachments + the ones sent in replies
+export const countAttachments = (ticket) =>
+  (ticket.attachments?.length || 0) +
+  (ticket.messages || []).reduce((n, m) => n + (m.attachments?.length || 0), 0);

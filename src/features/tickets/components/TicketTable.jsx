@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { formatDate } from '@/lib/format';
 import { StatusBadge } from './StatusBadge';
 import { PriorityBadge } from './PriorityBadge';
-import { lastActivity, nameOf } from '../ticketUtils';
+import { countAttachments, lastActivity, nameOf } from '../ticketUtils';
 
 // List of tickets. `showCreator` adds the "Created by" column (admin list).
 export function TicketTable({ tickets, showCreator = false }) {
@@ -22,9 +22,7 @@ export function TicketTable({ tickets, showCreator = false }) {
       </TableHeader>
       <TableBody>
         {tickets.map((ticket) => {
-          const attachments =
-            (ticket.attachments?.length || 0) +
-            (ticket.messages || []).reduce((n, m) => n + (m.attachments?.length || 0), 0);
+          const attachments = countAttachments(ticket);
           return (
             <TableRow key={ticket._id}>
               <TableCell className="max-w-0 whitespace-normal">

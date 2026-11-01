@@ -2,12 +2,18 @@ import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
-import { PRIORITY_DESCRIPTIONS, PRIORITY_LABELS, prioritiesFor } from '@/lib/constants';
+import {
+  PRIORITY_DESCRIPTIONS,
+  PRIORITY_LABELS,
+  STATUS_LABELS,
+  TICKET_STATUSES,
+  prioritiesFor,
+} from '@/lib/constants';
 import { useAuth } from '@/features/auth/useAuth';
 import { formatDateTime } from '@/lib/format';
 import { getErrorMessage } from '@/lib/errors';
 import { StatusBadge } from './StatusBadge';
-import { useUpdatePriority } from '../hooks/useTickets';
+import { useUpdatePriority, useUpdateStatus } from '../hooks/useTickets';
 import { nameOf } from '../ticketUtils';
 
 function Row({ label, children }) {
@@ -19,8 +25,38 @@ function Row({ label, children }) {
   );
 }
 
-// Right-hand panel of a ticket: status, priority (editable), category, dates, handler
-export function TicketDetailsPanel({ ticket, canEditPriority, children }) {
+// Status dropdown (support team only — the backend refuses it for normal users)
+function StatusSelect({ ticket }) {
+  const updateStatus = useUpdateStatus(ticket._id);
+  const onChange = (status) =>
+    updateStatus.mutate(status, {
+      onSuccess: () => toast.success(`Status changed to ${STATUS_LABELS[status]}`),
+      onError: (error) => toast.error(getErrorMessage(error)),
+    });
+
+  return (
+    <div className="flex items-center gap-2">
+      <Select value={ticket.status} onValueChange={onChange} disabled={updateStatus.isPending}>
+        <SelectTrigger size="sm" aria-label="Change status" className="w-36">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {TICKET_STATUSES.map((s) => (
+            <SelectItem key={s} value={s}>
+              {STATUS_LABELS[s]}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {updateStatus.isPending && <Spinner className="text-muted-foreground" />}
+    </div>
+  );
+}
+
+// Right-hand panel of a ticket: status, priority, category, dates, handler.
+// canEditPriority: owner or admin. canManage: admin (status can be changed).
+// children: extra content at the bottom (the admin actions).
+export function TicketDetailsPanel({ ticket, canEditPriority, canManage = false, children }) {
   const { user } = useAuth();
   const updatePriority = useUpdatePriority(ticket._id);
 
@@ -38,7 +74,7 @@ export function TicketDetailsPanel({ ticket, canEditPriority, children }) {
       <CardContent>
         <dl className="grid gap-4">
           <Row label="Status">
-            <StatusBadge status={ticket.status} />
+            {canManage ? <StatusSelect ticket={ticket} /> : <StatusBadge status={ticket.status} />}
           </Row>
           <Row label="Priority">
             {canEditPriority ? (

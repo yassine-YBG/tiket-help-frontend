@@ -11,6 +11,7 @@ import { useTicket } from '../hooks/useTickets';
 import { MessageThread } from '../components/MessageThread';
 import { ReplyForm } from '../components/ReplyForm';
 import { TicketDetailsPanel } from '../components/TicketDetailsPanel';
+import { AdminTicketActions } from '../components/AdminTicketActions';
 import { StatusBadge } from '../components/StatusBadge';
 import { PriorityBadge } from '../components/PriorityBadge';
 import { isOwner } from '../ticketUtils';
@@ -69,7 +70,8 @@ export default function TicketDetailPage() {
     return <ErrorState error={error} onRetry={refetch} />;
   }
 
-  const canEditPriority = isOwner(ticket, user) || isAdmin(user);
+  const admin = isAdmin(user);
+  const canEditPriority = isOwner(ticket, user) || admin;
 
   return (
     <>
@@ -94,8 +96,10 @@ export default function TicketDetailPage() {
           <ReplyForm ticketId={ticket._id} />
         </section>
 
-        <aside className="lg:sticky lg:top-20">
-          <TicketDetailsPanel ticket={ticket} canEditPriority={canEditPriority} />
+        <aside className="lg:sticky lg:top-20" aria-label="Ticket details">
+          <TicketDetailsPanel ticket={ticket} canEditPriority={canEditPriority} canManage={admin}>
+            {admin && <AdminTicketActions ticket={ticket} />}
+          </TicketDetailsPanel>
         </aside>
       </div>
     </>

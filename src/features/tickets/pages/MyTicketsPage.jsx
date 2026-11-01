@@ -1,22 +1,19 @@
 import { Link } from 'react-router';
-import { PlusIcon, SearchXIcon, TicketIcon } from 'lucide-react';
+import { PlusIcon, TicketIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Pagination } from '@/components/data/Pagination';
-import { TableSkeleton } from '@/components/data/TableSkeleton';
 import { EmptyState } from '@/components/feedback/EmptyState';
-import { ErrorState } from '@/components/feedback/ErrorState';
 import { toApiParams, useUrlFilters } from '@/hooks/useUrlFilters';
 import { useTicketList } from '../hooks/useTickets';
 import { TicketFilters } from '../components/TicketFilters';
-import { TicketTable } from '../components/TicketTable';
+import { TicketListBody } from '../components/TicketListBody';
 
 const DEFAULTS = { page: '1', limit: '20', sort: 'priority' };
 
 export default function MyTicketsPage() {
   const { filters, setFilters, resetFilters, activeCount } = useUrlFilters(DEFAULTS);
-  const { data, isPending, isError, error, refetch, isPlaceholderData } = useTicketList('mine', toApiParams(filters));
+  const query = useTicketList('mine', toApiParams(filters));
 
   const newTicketButton = (
     <Button asChild>
@@ -26,44 +23,6 @@ export default function MyTicketsPage() {
       </Link>
     </Button>
   );
-
-  let content;
-  if (isPending) {
-    content = <TableSkeleton rows={6} columns={5} />;
-  } else if (isError) {
-    content = <ErrorState error={error} onRetry={refetch} />;
-  } else if (data.tickets.length === 0) {
-    content =
-      activeCount > 0 ? (
-        <EmptyState
-          icon={SearchXIcon}
-          title="No ticket matches these filters"
-          action={
-            <Button variant="outline" onClick={resetFilters}>
-              Clear filters
-            </Button>
-          }
-        />
-      ) : (
-        <EmptyState
-          icon={TicketIcon}
-          title="You have no tickets yet"
-          description="Open a ticket and the support team will help you."
-          action={newTicketButton}
-        />
-      );
-  } else {
-    content = (
-      <div className={isPlaceholderData ? 'opacity-60 transition-opacity' : undefined}>
-        <TicketTable tickets={data.tickets} />
-        <Pagination
-          pagination={data.pagination}
-          onPageChange={(page) => setFilters({ page })}
-          disabled={isPlaceholderData}
-        />
-      </div>
-    );
-  }
 
   return (
     <>
@@ -80,7 +39,20 @@ export default function MyTicketsPage() {
             resetFilters={resetFilters}
             activeCount={activeCount}
           />
-          {content}
+          <TicketListBody
+            query={query}
+            activeCount={activeCount}
+            resetFilters={resetFilters}
+            onPageChange={(page) => setFilters({ page })}
+            emptyState={
+              <EmptyState
+                icon={TicketIcon}
+                title="You have no tickets yet"
+                description="Open a ticket and the support team will help you."
+                action={newTicketButton}
+              />
+            }
+          />
         </CardContent>
       </Card>
     </>
