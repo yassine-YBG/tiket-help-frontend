@@ -12,6 +12,7 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 // Reloads the data shown on the screen right now (current list, open ticket,
 // menu counters) — not the whole page: filters, search and text being typed stay.
 // The automatic refresh every 30 s keeps running; this is for "I want it now".
+// On phones only the icon shows (the label stays for screen readers).
 export function RefreshButton({ className }) {
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
@@ -36,9 +37,15 @@ export function RefreshButton({ className }) {
   };
 
   return (
-    <Button variant="outline" size="sm" onClick={refresh} disabled={refreshing} className={className}>
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={refresh}
+      disabled={refreshing}
+      className={cn('max-sm:size-9 max-sm:px-0', className)}
+    >
       <RefreshCwIcon className={cn(refreshing && 'animate-spin')} />
-      {refreshing ? 'Refreshing…' : 'Refresh'}
+      <span className="max-sm:sr-only">{refreshing ? 'Refreshing…' : 'Refresh'}</span>
     </Button>
   );
 }

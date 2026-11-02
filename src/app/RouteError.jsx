@@ -1,5 +1,5 @@
 import { Link, useRouteError } from 'react-router';
-import { AlertTriangleIcon } from 'lucide-react';
+import { RotateCwIcon, SparklesIcon, TriangleAlertIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 // Shown instead of a page that crashed, inside the app layout:
@@ -13,13 +13,15 @@ export default function RouteError() {
 
   if (import.meta.env.DEV) console.error(error);
 
+  const Icon = isOutdated ? SparklesIcon : TriangleAlertIcon;
+
   return (
-    <div role="alert" className="mx-auto flex max-w-md flex-col items-center gap-4 py-16 text-center">
-      <div className="flex size-12 items-center justify-center rounded-full bg-destructive/10">
-        <AlertTriangleIcon className="size-6 text-destructive" />
+    <div role="alert" className="mx-auto flex min-h-[60dvh] max-w-md flex-col items-center justify-center gap-5 px-6 py-16 text-center">
+      <div className={isOutdated ? 'flex size-12 items-center justify-center rounded-xl bg-brand-soft' : 'flex size-12 items-center justify-center rounded-xl bg-danger-soft'}>
+        <Icon className={isOutdated ? 'size-5 text-primary' : 'size-5 text-danger'} />
       </div>
-      <div className="grid gap-1">
-        <h1 className="text-lg font-semibold">
+      <div className="grid gap-1.5">
+        <h1 className="text-lg font-semibold tracking-tight">
           {isOutdated ? 'A new version is available' : 'Something went wrong on this page'}
         </h1>
         <p className="text-sm text-muted-foreground">
@@ -27,7 +29,10 @@ export default function RouteError() {
         </p>
       </div>
       <div className="flex gap-2">
-        <Button onClick={() => window.location.reload()}>Reload</Button>
+        <Button onClick={() => window.location.reload()}>
+          <RotateCwIcon />
+          Reload
+        </Button>
         <Button variant="outline" asChild>
           <Link to="/">Go home</Link>
         </Button>

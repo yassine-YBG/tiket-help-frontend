@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { CheckIcon, UserCheckIcon, XIcon } from 'lucide-react';
+import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { DataPanel } from '@/components/data/DataPanel';
 import { TableSkeleton } from '@/components/data/TableSkeleton';
 import { EmptyState } from '@/components/feedback/EmptyState';
 import { ErrorState } from '@/components/feedback/ErrorState';
@@ -40,26 +41,32 @@ function PendingRow({ user }) {
     );
 
   return (
-    <TableRow>
-      <TableCell className="font-medium">
-        {name}
-        <div className="text-xs text-muted-foreground md:hidden">{user.email}</div>
+    <TableRow className="max-md:flex max-md:flex-wrap max-md:items-center max-md:gap-2 max-md:py-3.5">
+      <TableCell className="max-md:block max-md:basis-full max-md:p-0">
+        <div className="flex items-center gap-3">
+          <Avatar first={user.username} last={user.lastname} seed={user.email} size="md" />
+          <div className="min-w-0">
+            <div className="truncate font-medium">{name}</div>
+            <div className="truncate text-xs text-muted-foreground">{user.email}</div>
+          </div>
+        </div>
       </TableCell>
-      <TableCell className="hidden text-muted-foreground md:table-cell">{user.email}</TableCell>
-      <TableCell>
+      <TableCell className="max-md:block max-md:p-0">
         <RoleBadge role={user.role} />
       </TableCell>
-      <TableCell className="hidden text-muted-foreground lg:table-cell">{formatDate(user.createdAt)}</TableCell>
-      <TableCell className="text-right">
+      <TableCell className="text-[13px] text-muted-foreground tabular-nums max-md:block max-md:p-0 max-md:text-xs">
+        {formatDate(user.createdAt)}
+      </TableCell>
+      <TableCell className="text-right max-md:ml-auto max-md:block max-md:basis-full max-md:p-0">
         {allowed ? (
-          <div className="flex flex-wrap items-center justify-end gap-1">
+          <div className="flex items-center justify-end gap-1.5 max-md:[&>button]:flex-1">
+            <Button size="sm" variant="outline" className="text-destructive" onClick={() => setConfirmOpen(true)}>
+              <XIcon />
+              Reject
+            </Button>
             <Button size="sm" onClick={onApprove} disabled={approve.isPending}>
               <CheckIcon />
               Activate
-            </Button>
-            <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => setConfirmOpen(true)}>
-              <XIcon />
-              Reject
             </Button>
             <ConfirmDialog
               open={confirmOpen}
@@ -84,23 +91,22 @@ export default function PendingUsersPage() {
   const { data: users, isPending, isError, error, refetch } = usePendingUsers();
 
   let content;
-  if (isPending) content = <TableSkeleton rows={4} columns={5} />;
+  if (isPending) content = <TableSkeleton rows={4} columns={4} />;
   else if (isError) content = <ErrorState error={error} onRetry={refetch} />;
   else if (users.length === 0) {
     content = <EmptyState icon={UserCheckIcon} title="No account is waiting" description="New registrations appear here." />;
   } else {
     content = (
-      <Table>
-        <TableHeader>
+      <Table className="max-md:block">
+        <TableHeader className="max-md:hidden">
           <TableRow>
             <TableHead>Name</TableHead>
-            <TableHead className="hidden md:table-cell">Email</TableHead>
             <TableHead>Role</TableHead>
-            <TableHead className="hidden lg:table-cell">Registered</TableHead>
+            <TableHead>Registered</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
+        <TableBody className="max-md:block">
           {users.map((user) => (
             <PendingRow key={user._id} user={user} />
           ))}
@@ -111,10 +117,13 @@ export default function PendingUsersPage() {
 
   return (
     <>
-      <PageHeader refreshable title="Pending accounts" description="New accounts waiting for activation." />
-      <Card className="py-4">
-        <CardContent className="px-4">{content}</CardContent>
-      </Card>
+      <PageHeader
+        refreshable
+        eyebrow="Administration"
+        title="Pending accounts"
+        description="New accounts waiting for activation. Customers cannot log in until you activate them."
+      />
+      <DataPanel className="pt-1">{content}</DataPanel>
     </>
   );
 }

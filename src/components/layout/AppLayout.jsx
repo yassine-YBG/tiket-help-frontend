@@ -1,47 +1,43 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router';
-import { XIcon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
+import { MobileTabBar } from './MobileTabBar';
 
-// Frame of every logged-in page: sidebar on the left, top bar, page content.
-// On small screens the sidebar opens as an overlay from the menu button.
+// Frame of every logged-in page.
+//  - tablet / desktop (md+): fixed sidebar on the canvas, the page in a raised panel
+//  - phone: top bar + bottom tab bar; "More" opens the full menu as a drawer
 export function AppLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-svh md:grid md:grid-cols-[15rem_1fr]">
-      <aside className="hidden border-r md:block">
-        <div className="sticky top-0 h-svh">
+    <div className="min-h-dvh bg-canvas md:grid md:grid-cols-[16rem_minmax(0,1fr)]">
+      <aside className="hidden md:block">
+        <div className="sticky top-0 h-dvh">
           <Sidebar />
         </div>
       </aside>
 
-      {menuOpen && (
-        <div className="fixed inset-0 z-40 md:hidden" role="dialog" aria-modal="true">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setMenuOpen(false)} />
-          <div className="absolute inset-y-0 left-0 w-64 border-r shadow-lg">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-2 top-3"
-              onClick={() => setMenuOpen(false)}
-              aria-label="Close menu"
-            >
-              <XIcon />
-            </Button>
-            <Sidebar onNavigate={() => setMenuOpen(false)} />
-          </div>
-        </div>
-      )}
+      <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+        <SheetContent side="left" title="Menu" className="md:hidden">
+          <Sidebar onNavigate={() => setMenuOpen(false)} />
+        </SheetContent>
+      </Sheet>
 
-      <div className="flex min-w-0 flex-col">
-        <Topbar onOpenMenu={() => setMenuOpen(true)} />
-        <main className="flex-1 p-4 md:p-6">
-          <Outlet />
+      <div className="flex min-w-0 flex-col md:py-2 md:pr-2">
+        <Topbar />
+        <main
+          id="main"
+          className="flex-1 bg-background px-4 pt-5 pb-[calc(var(--tabbar-height)+env(safe-area-inset-bottom,0px)+1.5rem)] md:min-h-[calc(100dvh-1rem)] md:rounded-xl md:px-8 md:pt-8 md:pb-10 md:shadow-panel"
+        >
+          <div className="mx-auto w-full max-w-6xl">
+            <Outlet />
+          </div>
         </main>
       </div>
+
+      <MobileTabBar onOpenMenu={() => setMenuOpen(true)} />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { Pagination } from '@/components/data/Pagination';
 import { TableSkeleton } from '@/components/data/TableSkeleton';
 import { EmptyState } from '@/components/feedback/EmptyState';
 import { ErrorState } from '@/components/feedback/ErrorState';
+import { cn } from '@/lib/utils';
 import { TicketTable } from './TicketTable';
 
 // Everything under the filters of a ticket list: loading, error, empty, table + pagination.
@@ -23,6 +24,7 @@ export function TicketListBody({ query, activeCount, resetFilters, onPageChange,
       <EmptyState
         icon={SearchXIcon}
         title="No ticket matches these filters"
+        description="Try another word or remove a filter."
         action={
           <Button variant="outline" onClick={resetFilters}>
             Clear filters
@@ -33,7 +35,7 @@ export function TicketListBody({ query, activeCount, resetFilters, onPageChange,
   }
 
   return (
-    <div className={isPlaceholderData ? 'opacity-60 transition-opacity' : undefined}>
+    <div className={cn('transition-opacity duration-200', isPlaceholderData && 'opacity-60')}>
       <TicketTable tickets={data.tickets} adminView={adminView} />
       <Pagination pagination={data.pagination} onPageChange={onPageChange} disabled={isPlaceholderData} />
     </div>

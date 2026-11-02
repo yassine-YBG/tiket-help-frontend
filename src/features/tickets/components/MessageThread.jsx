@@ -1,19 +1,37 @@
+import { Avatar } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { formatDateTime } from '@/lib/format';
 import { idOf, nameOf } from '../ticketUtils';
 import { AttachmentList } from './AttachmentList';
 
-function Bubble({ author, date, isMine, isCreator, children }) {
+const lastnameOf = (person) => (person && typeof person === 'object' ? person.lastname : '');
+
+function Message({ person, date, isMine, isSupport, label, children }) {
+  const name = nameOf(person);
   return (
-    <article className={cn('rounded-xl border p-4', isMine ? 'border-primary/30 bg-primary/5' : 'bg-card')}>
-      <header className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-        <p className="text-sm font-medium">
-          {isMine ? 'You' : author}
-          {!isCreator && <span className="ml-2 text-xs font-normal text-primary">Support</span>}
-        </p>
-        <time className="text-xs text-muted-foreground">{formatDateTime(date)}</time>
-      </header>
-      {children}
+    <article className="relative flex gap-3 sm:gap-4">
+      <Avatar first={name} last={lastnameOf(person)} seed={idOf(person) ?? name} size="md" className="relative z-10 ring-4 ring-background" />
+      <div className="min-w-0 flex-1">
+        <header className="mb-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+          <p className="text-sm font-semibold">{isMine ? 'You' : name}</p>
+          {isSupport && (
+            <Badge variant="brand" className="px-1.5 py-0 text-[11px]">
+              Support
+            </Badge>
+          )}
+          {label && <span className="text-xs text-muted-foreground">· {label}</span>}
+          <time className="ml-auto text-xs text-muted-foreground tabular-nums">{formatDateTime(date)}</time>
+        </header>
+        <div
+          className={cn(
+            'rounded-xl rounded-tl-sm border px-4 py-3',
+            isSupport ? 'border-primary/15 bg-brand-soft/50' : 'bg-card shadow-xs'
+          )}
+        >
+          {children}
+        </div>
+      </div>
     </article>
   );
 }
@@ -24,38 +42,41 @@ export function MessageThread({ ticket, currentUser }) {
   const creatorId = idOf(ticket.createdBy);
 
   return (
-    <div className="grid gap-3">
-      <Bubble
-        author={nameOf(ticket.createdBy)}
+    <div className="relative grid gap-6">
+      {/* the line linking the messages, behind the avatars */}
+      <div aria-hidden className="absolute top-4 bottom-4 left-[17px] w-px bg-border" />
+
+      <Message
+        person={ticket.createdBy}
         date={ticket.createdAt}
         isMine={creatorId === currentUser.id}
-        isCreator
+        label="opened this ticket"
       >
-        <p className="whitespace-pre-wrap break-words text-sm">{ticket.description}</p>
+        <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">{ticket.description}</p>
         {ticket.attachments?.length > 0 && (
           <div className="mt-3">
             <AttachmentList ticketId={ticket._id} attachments={ticket.attachments} type="ticket" />
           </div>
         )}
-      </Bubble>
+      </Message>
 
       {ticket.messages.map((message) => {
         const senderId = idOf(message.sender);
         return (
-          <Bubble
+          <Message
             key={message._id}
-            author={nameOf(message.sender)}
+            person={message.sender}
             date={message.sentAt}
             isMine={senderId === currentUser.id}
-            isCreator={senderId === creatorId}
+            isSupport={senderId !== creatorId}
           >
-            {message.message && <p className="whitespace-pre-wrap break-words text-sm">{message.message}</p>}
+            {message.message && <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">{message.message}</p>}
             {message.attachments?.length > 0 && (
               <div className={cn(message.message && 'mt-3')}>
                 <AttachmentList ticketId={ticket._id} attachments={message.attachments} type="message" />
               </div>
             )}
-          </Bubble>
+          </Message>
         );
       })}
     </div>

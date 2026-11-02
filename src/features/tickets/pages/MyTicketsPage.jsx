@@ -1,8 +1,8 @@
 import { Link } from 'react-router';
 import { PlusIcon, TicketIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { DataPanel } from '@/components/data/DataPanel';
 import { EmptyState } from '@/components/feedback/EmptyState';
 import { toApiParams, useUrlFilters } from '@/hooks/useUrlFilters';
 import { useTicketList } from '../hooks/useTickets';
@@ -28,34 +28,36 @@ export default function MyTicketsPage() {
     <>
       <PageHeader
         refreshable
+        eyebrow="Support"
         title="My tickets"
-        description="Follow the tickets you have opened."
+        description="Follow the tickets you have opened. A blue dot means support answered you."
         actions={newTicketButton}
       />
-      <Card className="gap-4 py-4">
-        <CardContent className="grid gap-4 px-4">
+      <DataPanel
+        toolbar={
           <TicketFilters
             filters={filters}
             setFilters={setFilters}
             resetFilters={resetFilters}
             activeCount={activeCount}
           />
-          <TicketListBody
-            query={query}
-            activeCount={activeCount}
-            resetFilters={resetFilters}
-            onPageChange={(page) => setFilters({ page })}
-            emptyState={
-              <EmptyState
-                icon={TicketIcon}
-                title="You have no tickets yet"
-                description="Open a ticket and the support team will help you."
-                action={newTicketButton}
-              />
-            }
-          />
-        </CardContent>
-      </Card>
+        }
+      >
+        <TicketListBody
+          query={query}
+          activeCount={activeCount}
+          resetFilters={resetFilters}
+          onPageChange={(page) => setFilters({ page })}
+          emptyState={
+            <EmptyState
+              icon={TicketIcon}
+              title="You have no tickets yet"
+              description="Open a ticket and the support team will help you."
+              action={newTicketButton}
+            />
+          }
+        />
+      </DataPanel>
     </>
   );
 }

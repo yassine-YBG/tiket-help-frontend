@@ -1,20 +1,17 @@
-import { AlertTriangleIcon, RotateCwIcon } from 'lucide-react';
+import { CloudAlertIcon, RotateCwIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getErrorMessage } from '@/lib/errors';
 
 // Shown when data could not be loaded. "Try again" re-runs the request.
 export function ErrorState({ error, onRetry, title = 'Could not load this data' }) {
   return (
-    <div
-      role="alert"
-      className="flex flex-col items-center justify-center gap-3 rounded-xl border border-destructive/30 bg-card px-6 py-12 text-center"
-    >
-      <div className="flex size-12 items-center justify-center rounded-full bg-destructive/10">
-        <AlertTriangleIcon className="size-6 text-destructive" />
+    <div role="alert" className="flex flex-col items-center justify-center gap-4 px-6 py-14 text-center">
+      <div className="flex size-12 items-center justify-center rounded-xl bg-danger-soft">
+        <CloudAlertIcon className="size-5 text-danger" />
       </div>
-      <div className="grid gap-1">
-        <p className="font-medium">{title}</p>
-        <p className="max-w-sm text-sm text-muted-foreground">{getErrorMessage(error)}</p>
+      <div className="grid max-w-sm gap-1">
+        <p className="text-[15px] font-semibold">{title}</p>
+        <p className="text-sm text-pretty text-muted-foreground">{getErrorMessage(error)}</p>
       </div>
       {onRetry && (
         <Button variant="outline" size="sm" onClick={onRetry}>

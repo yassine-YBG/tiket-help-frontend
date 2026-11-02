@@ -1,7 +1,7 @@
 import { InboxIcon } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { DataPanel } from '@/components/data/DataPanel';
 import { EmptyState } from '@/components/feedback/EmptyState';
 import { toApiParams, useUrlFilters } from '@/hooks/useUrlFilters';
 import { useTicketList } from '../hooks/useTickets';
@@ -30,7 +30,7 @@ const ARCHIVED_OPTIONS = [
 function ArchivedFilter({ value, onChange }) {
   return (
     <Select value={value || HIDE_ARCHIVED} onValueChange={(next) => onChange(next === HIDE_ARCHIVED ? '' : next)}>
-      <SelectTrigger aria-label="Archived tickets" className="w-[160px]">
+      <SelectTrigger aria-label="Archived tickets" className="w-[150px]">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -48,7 +48,7 @@ function ArchivedFilter({ value, onChange }) {
 function NeedsReplyFilter({ value, onChange }) {
   return (
     <Select value={value === 'true' ? 'true' : ANYONE} onValueChange={(next) => onChange(next === ANYONE ? '' : next)}>
-      <SelectTrigger aria-label="Filter by reply" className="w-[150px]">
+      <SelectTrigger aria-label="Filter by reply" className="w-[140px]">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -85,11 +85,12 @@ export default function AllTicketsPage() {
     <>
       <PageHeader
         refreshable
+        eyebrow="Support console"
         title="All tickets"
         description="Every ticket: filter, assign and resolve. Archived tickets are hidden unless you ask for them."
       />
-      <Card className="gap-4 py-4">
-        <CardContent className="grid gap-4 px-4">
+      <DataPanel
+        toolbar={
           <TicketFilters
             filters={filters}
             setFilters={setFilters}
@@ -103,18 +104,19 @@ export default function AllTicketsPage() {
             <AssigneeFilter value={filters.handledBy} onChange={(handledBy) => setFilters({ handledBy })} />
             <ArchivedFilter value={filters.archived} onChange={(archived) => setFilters({ archived })} />
           </TicketFilters>
-          <TicketListBody
-            query={query}
-            activeCount={activeCount}
-            resetFilters={resetFilters}
-            onPageChange={(page) => setFilters({ page })}
-            adminView
-            emptyState={
-              <EmptyState icon={InboxIcon} title="No tickets yet" description="New tickets from users will appear here." />
-            }
-          />
-        </CardContent>
-      </Card>
+        }
+      >
+        <TicketListBody
+          query={query}
+          activeCount={activeCount}
+          resetFilters={resetFilters}
+          onPageChange={(page) => setFilters({ page })}
+          adminView
+          emptyState={
+            <EmptyState icon={InboxIcon} title="No tickets yet" description="New tickets from users will appear here." />
+          }
+        />
+      </DataPanel>
     </>
   );
 }

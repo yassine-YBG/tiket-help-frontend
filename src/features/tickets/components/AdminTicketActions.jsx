@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { ArchiveIcon, ArchiveRestoreIcon, LockIcon, UserCheckIcon, UserRoundCogIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
 import { ConfirmDialog } from '@/components/feedback/ConfirmDialog';
 import { useAuth } from '@/features/auth/useAuth';
@@ -22,7 +21,7 @@ export function AssignButton({ ticket, className = 'w-full' }) {
 
   if (who === 'me') {
     return (
-      <p className="flex items-center gap-2 text-sm text-muted-foreground">
+      <p className="flex items-center gap-2 text-[13px] font-medium text-success">
         <UserCheckIcon className="size-4" />
         You are handling this ticket
       </p>
@@ -50,7 +49,7 @@ export function AssignButton({ ticket, className = 'w-full' }) {
   const otherName = nameOf(ticket.handledBy);
   if (!canTakeOver(ticket, user)) {
     return (
-      <p className="flex items-center gap-2 text-sm text-muted-foreground">
+      <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
         <LockIcon className="size-4 shrink-0" />
         Handled by {otherName} (superadmin)
       </p>
@@ -86,7 +85,7 @@ function ArchiveButton({ ticket }) {
   const [open, setOpen] = useState(false);
 
   if (ticket.status !== 'résolu') {
-    return <p className="text-xs text-muted-foreground">Resolve the ticket to be able to archive it.</p>;
+    return <p className="text-xs leading-relaxed text-muted-foreground">Resolve the ticket to be able to archive it.</p>;
   }
 
   const onConfirm = async () => {
@@ -143,12 +142,11 @@ export function AdminTicketActions({ ticket, showAssign = true }) {
   const mayArchive = canArchive(ticket, user);
 
   return (
-    <div className="mt-4 grid gap-2">
-      <Separator className="mb-2" />
+    <div className="grid gap-2.5">
       {ticket.archived ? (
         <>
-          <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            <ArchiveIcon className="size-4" />
+          <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
+            <ArchiveIcon className="size-4 shrink-0" />
             Archived — hidden from the All tickets list
           </p>
           {mayArchive && <RestoreButton ticket={ticket} />}

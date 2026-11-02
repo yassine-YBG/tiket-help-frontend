@@ -27,16 +27,17 @@ export function DebouncedSearch({ value = '', onCommit, label, placeholder, maxL
   }, [debounced]);
 
   return (
-    <div className="relative w-full sm:w-64">
-      <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+    <div className="relative w-full md:w-72">
+      <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
       <Input
         type="search"
+        enterKeyHint="search"
         placeholder={placeholder}
         aria-label={label}
         value={text}
         maxLength={maxLength}
         onChange={(e) => setText(e.target.value)}
-        className="pl-8"
+        className="pl-9"
       />
     </div>
   );

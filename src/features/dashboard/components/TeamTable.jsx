@@ -1,3 +1,4 @@
+import { Avatar } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatHours } from '@/lib/format';
 import { NoData } from './ChartCard';
@@ -20,8 +21,13 @@ export function TeamTable({ rows }) {
         {sorted.map((a) => (
           <TableRow key={a.adminId}>
             <TableCell>
-              <div className="font-medium">{a.username}</div>
-              {a.email && <div className="text-xs text-muted-foreground">{a.email}</div>}
+              <div className="flex items-center gap-3">
+                <Avatar first={a.username} seed={a.email ?? a.username} size="sm" />
+                <div className="min-w-0">
+                  <div className="font-medium">{a.username}</div>
+                  {a.email && <div className="text-xs text-muted-foreground">{a.email}</div>}
+                </div>
+              </div>
             </TableCell>
             <TableCell className="text-right tabular-nums">{a.handled}</TableCell>
             <TableCell className="text-right tabular-nums">{a.resolved}</TableCell>
