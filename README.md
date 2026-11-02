@@ -128,5 +128,5 @@ npx shadcn@latest add dialog select table
 | ✅ | Profile | everyone | `/profile` |
 | 🔜 | Dashboard | admins | `/admin/dashboard` |
 | ✅ | All tickets ("Needs reply" badge, filter + menu counter; assignee, archived filters) | admins | `/admin/tickets` |
-| 🔜 | Users, Pending accounts | admins | `/admin/users`, `/admin/users/pending` |
+| ✅ | Users (search, role / status filters, activate, delete / restore, roles by superadmin), Pending accounts (activate / reject) | admins | `/admin/users`, `/admin/users/pending` |
 | 🔜 | Activity logs | admins | `/admin/activity` |
