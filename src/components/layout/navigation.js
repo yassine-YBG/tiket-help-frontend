@@ -29,7 +29,7 @@ export const NAV_SECTIONS = [
       { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboardIcon },
       { to: '/admin/tickets', label: 'All tickets', icon: ListChecksIcon, counter: 'needsReply' },
       { to: '/admin/users', label: 'Users', icon: UsersIcon, end: true },
-      { to: '/admin/users/pending', label: 'Pending accounts', icon: UserCheckIcon },
+      { to: '/admin/users/pending', label: 'Pending accounts', icon: UserCheckIcon, counter: 'pendingUsers' },
       { to: '/admin/activity', label: 'Activity logs', icon: ActivityIcon },
     ],
   },

@@ -27,4 +27,10 @@ describe('Sidebar counters', () => {
     await screen.findByRole('link', { name: /My tickets/ });
     expect(screen.queryByLabelText(/new answer/)).not.toBeInTheDocument();
   });
+
+  it('an admin sees how many accounts wait for activation', async () => {
+    vi.mocked(ticketsApi.summary).mockResolvedValue({ needsReply: 0, needsReplyMine: 0, pendingUsers: 2 });
+    renderWithProviders(<Sidebar />, { user: testUsers.admin });
+    expect(await screen.findByLabelText('2 accounts waiting for activation')).toHaveTextContent('2');
+  });
 });

@@ -126,7 +126,7 @@ npx shadcn@latest add dialog select table
 | ✅ | New ticket | everyone | `/tickets/new` |
 | ✅ | Ticket detail (resolved = closed, follow-up ticket; admins: assign / take over, status, archive / restore) | owner, admins | `/tickets/:id` |
 | ✅ | Profile | everyone | `/profile` |
-| 🔜 | Dashboard | admins | `/admin/dashboard` |
+| ✅ | Dashboard (period, numbers, response times, created vs resolved chart, priorities, categories; team table for the superadmin) | admins | `/admin/dashboard` |
 | ✅ | All tickets ("Needs reply" badge, filter + menu counter; assignee, archived filters) | admins | `/admin/tickets` |
 | ✅ | Users (search, role / status filters, activate, delete / restore, roles by superadmin), Pending accounts (activate / reject) | admins | `/admin/users`, `/admin/users/pending` |
-| 🔜 | Activity logs | admins | `/admin/activity` |
+| ✅ | Activity logs (who / what / when, filters by person, type and dates; admins never see superadmin actions) | admins | `/admin/activity` |
