@@ -8,6 +8,7 @@ import { visibleSections } from './navigation';
 const COUNTER_LABELS = {
   newAnswers: (n) => `${n} ticket${n > 1 ? 's' : ''} with a new answer`,
   needsReply: (n) => `${n} ticket${n > 1 ? 's' : ''} waiting for a support reply`,
+  pendingUsers: (n) => `${n} account${n > 1 ? 's' : ''} waiting for activation`,
 };
 
 // Small red number next to a menu item (hidden when 0)

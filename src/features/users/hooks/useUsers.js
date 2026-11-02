@@ -14,7 +14,7 @@ export function usePendingUsers() {
   return useQuery({ queryKey: queryKeys.users.pending(), queryFn: usersApi.pending });
 }
 
-// Any change to an account: refresh every user list (and the tickets, since a removed
+// Any change to an account: refresh every user list, the menu counters (and the tickets, since a removed
 // admin's open tickets go back to the team)
 function useUserMutation(mutationFn) {
   const queryClient = useQueryClient();
@@ -23,6 +23,8 @@ function useUserMutation(mutationFn) {
     onSuccess: (result) =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.users.all }),
+        // menu counter "Pending accounts" lives in the tickets summary
+        queryClient.invalidateQueries({ queryKey: queryKeys.tickets.summary() }),
         result?.ticketsReleased ? queryClient.invalidateQueries({ queryKey: queryKeys.tickets.all }) : null,
       ]),
   });

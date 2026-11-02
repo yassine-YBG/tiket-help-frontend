@@ -58,5 +58,21 @@ describe('toApiParams', () => {
   it('drops empty values', () => {
     expect(toApiParams({ page: '1', search: '', status: undefined, sort: 'newest' })).toEqual({ page: '1', sort: 'newest' });
   });
-});
+  it('two quick changes in a row are both kept (no lost update)', () => {
+    const r = setup();
+    act(() => {
+      r.current.setFilters({ from: '2000-01-01' });
+      r.current.setFilters({ to: '2000-01-31' });
+    });
+    expect(r.current.location.search).toBe('?from=2000-01-01&to=2000-01-31');
+  });
 
+  it('after a reset, the next change starts from an empty URL', () => {
+    const r = setup('/list?status=x&search=y');
+    act(() => {
+      r.current.resetFilters();
+      r.current.setFilters({ priority: 'high' });
+    });
+    expect(r.current.location.search).toBe('?priority=high');
+  });
+});

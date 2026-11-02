@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 
 const isEmpty = (value) => value === undefined || value === null || value === '';
@@ -23,26 +23,33 @@ export function useUrlFilters(defaults = {}) {
     return result;
   }, [searchParams, defaultValues]);
 
+  // The latest query, including changes not rendered yet: two quick changes
+  // (e.g. "from" then "to") must both be kept — the second must not start
+  // from the URL of the last render and erase the first.
+  const latestRef = useRef(searchParams);
+  useEffect(() => {
+    latestRef.current = searchParams; // URL changed (render, back button, link)
+  }, [searchParams]);
+
   const setFilters = useCallback(
     (changes, { replace = false } = {}) => {
-      setSearchParams(
-        (previous) => {
-          const next = new URLSearchParams(previous);
-          for (const [key, value] of Object.entries(changes)) {
-            if (isEmpty(value) || String(value) === String(defaultValues[key] ?? '')) next.delete(key);
-            else next.set(key, String(value));
-          }
-          // any filter change starts again from page 1
-          if (!('page' in changes)) next.delete('page');
-          return next;
-        },
-        { replace }
-      );
+      const next = new URLSearchParams(latestRef.current);
+      for (const [key, value] of Object.entries(changes)) {
+        if (isEmpty(value) || String(value) === String(defaultValues[key] ?? '')) next.delete(key);
+        else next.set(key, String(value));
+      }
+      // any filter change starts again from page 1
+      if (!('page' in changes)) next.delete('page');
+      latestRef.current = next;
+      setSearchParams(next, { replace });
     },
     [setSearchParams, defaultValues]
   );
 
-  const resetFilters = useCallback(() => setSearchParams({}), [setSearchParams]);
+  const resetFilters = useCallback(() => {
+    latestRef.current = new URLSearchParams();
+    setSearchParams({});
+  }, [setSearchParams]);
 
   const activeCount = useMemo(
     () => [...searchParams.keys()].filter((key) => !['page', 'limit', 'sort'].includes(key)).length,

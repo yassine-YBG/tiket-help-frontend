@@ -18,3 +18,12 @@ afterEach(() => {
   cleanup();
   localStorage.clear();
 });
+
+// Recharts measures its container with ResizeObserver (not in jsdom)
+if (!globalThis.ResizeObserver) {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}
