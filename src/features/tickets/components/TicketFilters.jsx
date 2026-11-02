@@ -1,9 +1,7 @@
-import { useEffect, useState } from 'react';
-import { SearchIcon, XIcon } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { XIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { DebouncedSearch } from '@/components/form/DebouncedSearch';
 import { PRIORITY_LABELS, STATUS_LABELS, TICKET_PRIORITIES, TICKET_STATUSES } from '@/lib/constants';
 
 const ALL = 'all'; // Radix Select needs a non-empty value for "no filter"
@@ -12,43 +10,16 @@ const SORT_LABELS = { priority: 'Sort: Priority', newest: 'Sort: Newest first', 
 
 // Search + status + priority + sort. Values live in the URL (useUrlFilters).
 export function TicketFilters({ filters, setFilters, resetFilters, activeCount, children }) {
-  // the search box updates instantly; the URL (and the request) waits 300 ms
-  const urlSearch = filters.search ?? '';
-  const [search, setSearch] = useState(urlSearch);
-  const debouncedSearch = useDebouncedValue(search, 300);
-
-  // URL changed from elsewhere (clear filters, back button): show it in the box.
-  // Done during render, as React recommends, instead of in an effect.
-  const [previousUrlSearch, setPreviousUrlSearch] = useState(urlSearch);
-  if (urlSearch !== previousUrlSearch) {
-    setPreviousUrlSearch(urlSearch);
-    if (urlSearch !== search.trim()) setSearch(urlSearch);
-  }
-
-  // the user stopped typing: write the search into the URL (this triggers the request)
-  useEffect(() => {
-    const value = debouncedSearch.trim();
-    if (value !== urlSearch) setFilters({ search: value }, { replace: true });
-    // only react to what the user typed, not to URL changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch]);
-
   const selectFilter = (key) => (value) => setFilters({ [key]: value === ALL ? '' : value });
 
   return (
     <div className="flex flex-wrap items-center gap-2" role="search">
-      <div className="relative w-full sm:w-64">
-        <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          type="search"
-          placeholder="Search subject or description…"
-          aria-label="Search tickets"
-          value={search}
-          maxLength={100}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-8"
-        />
-      </div>
+      <DebouncedSearch
+        value={filters.search ?? ''}
+        onCommit={(search) => setFilters({ search }, { replace: true })}
+        label="Search tickets"
+        placeholder="Search subject or description…"
+      />
 
       <Select value={filters.status || ALL} onValueChange={selectFilter('status')}>
         <SelectTrigger aria-label="Filter by status" className="w-[150px]">

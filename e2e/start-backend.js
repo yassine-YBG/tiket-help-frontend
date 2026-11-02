@@ -56,6 +56,11 @@ const ACCOUNTS = {
   profile: { username: 'Sami', lastname: 'Profile', email: 'sami@e2e.test', role: 'user', activated: true },
   empty: { username: 'Eya', lastname: 'Empty', email: 'eya@e2e.test', role: 'user', activated: true },
   alerts: { username: 'Alia', lastname: 'Alerts', email: 'alia@e2e.test', role: 'user', activated: true },
+  // user management (e2e/users.spec.js)
+  managed: { username: 'Mona', lastname: 'Managed', email: 'mona@e2e.test', role: 'user', activated: true },
+  staff: { username: 'Sami', lastname: 'Staff', email: 'staff@e2e.test', role: 'admin', activated: true },
+  applicant: { username: 'Amir', lastname: 'Applicant', email: 'amir@e2e.test', role: 'user', activated: false },
+  spammer: { username: 'Spam', lastname: 'Bot', email: 'spam@e2e.test', role: 'user', activated: false },
 };
 
 const hash = await bcrypt.hash(PASSWORD, 4);
