@@ -1,30 +1,21 @@
-import { LogOutIcon, MenuIcon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { useAuth } from '@/features/auth/useAuth';
-import { ROLE_LABELS } from '@/lib/constants';
+import { Link, useLocation } from 'react-router';
+import { LogoMark } from '@/components/brand/Logo';
+import { pageTitle } from './navigation';
+import { UserMenu } from './UserMenu';
 
-export function Topbar({ onOpenMenu }) {
-  const { user, logout } = useAuth();
+// Phone / small tablet top bar: brand, page title, account menu.
+// (On larger screens the sidebar carries all of this.)
+export function Topbar() {
+  const { pathname } = useLocation();
 
   return (
-    <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur md:px-6">
-      <Button variant="ghost" size="icon" className="md:hidden" onClick={onOpenMenu} aria-label="Open menu">
-        <MenuIcon />
-      </Button>
-
-      <div className="ml-auto flex items-center gap-3">
-        <div className="hidden text-right sm:block">
-          <p className="text-sm font-medium leading-tight">
-            {user.username} {user.lastname}
-          </p>
-          <p className="text-xs text-muted-foreground">{user.email}</p>
-        </div>
-        <Badge variant={user.role === 'user' ? 'secondary' : 'default'}>{ROLE_LABELS[user.role]}</Badge>
-        <Button variant="outline" size="sm" onClick={logout}>
-          <LogOutIcon />
-          <span className="hidden sm:inline">Log out</span>
-        </Button>
+    <header className="pt-safe sticky top-0 z-30 border-b bg-background/85 backdrop-blur-xl backdrop-saturate-150 md:hidden">
+      <div className="flex h-14 items-center gap-3 px-4">
+        <Link to="/" aria-label="Tiket Help home" className="pressable rounded-lg">
+          <LogoMark />
+        </Link>
+        <p className="min-w-0 flex-1 truncate text-[15px] font-semibold tracking-tight">{pageTitle(pathname)}</p>
+        <UserMenu />
       </div>
     </header>
   );

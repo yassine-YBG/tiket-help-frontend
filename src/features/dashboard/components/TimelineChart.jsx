@@ -18,7 +18,7 @@ export function TimelineChart({ data }) {
       <div className="h-64 w-full" aria-hidden="true">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
-            <CartesianGrid vertical={false} stroke="var(--border)" />
+            <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 4" />
             <XAxis
               dataKey="period"
               tickFormatter={formatPeriod}
@@ -38,10 +38,12 @@ export function TimelineChart({ data }) {
               cursor={{ stroke: 'var(--border)' }}
               contentStyle={{
                 background: 'var(--popover)',
-                border: '1px solid var(--border)',
-                borderRadius: 8,
+                border: 'none',
+                borderRadius: 10,
+                boxShadow: 'var(--shadow-float)',
                 color: 'var(--popover-foreground)',
                 fontSize: 12,
+                padding: '8px 12px',
               }}
             />
             <Legend

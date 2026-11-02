@@ -8,6 +8,7 @@ import { ErrorState } from '@/components/feedback/ErrorState';
 import { useAuth } from '@/features/auth/useAuth';
 import { getStatusCode } from '@/lib/errors';
 import { isAdmin } from '@/lib/constants';
+import { formatDateTime } from '@/lib/format';
 import { useMarkSeen, useTicket } from '../hooks/useTickets';
 import { MessageThread } from '../components/MessageThread';
 import { ReplyForm } from '../components/ReplyForm';
@@ -17,6 +18,23 @@ import { RefreshButton } from '@/components/layout/RefreshButton';
 import { StatusBadge } from '../components/StatusBadge';
 import { PriorityBadge } from '../components/PriorityBadge';
 import { assignment, canTakeOver, hasNewAnswer, isOwner, nameOf } from '../ticketUtils';
+import { ticketRef } from '../ticketRef';
+
+// Grey box under the conversation that explains why nobody can write here
+function Note({ icon: Icon, children, action }) {
+  return (
+    <div
+      role="note"
+      className="grid gap-3 rounded-xl border border-dashed bg-muted/40 px-4 py-3.5 text-sm text-muted-foreground sm:flex sm:items-center sm:justify-between"
+    >
+      <p className="flex items-start gap-2.5">
+        <Icon className="mt-0.5 size-4 shrink-0" />
+        {children}
+      </p>
+      {action}
+    </div>
+  );
+}
 
 // A resolved ticket is closed: nobody writes in it any more (the backend refuses it).
 // The owner opens a follow-up ticket; support can reopen it with the status.
@@ -35,20 +53,21 @@ function ClosedTicketNote({ ticket, owner, admin }) {
   }
 
   return (
-    <div role="note" className="grid gap-3 rounded-md border bg-muted px-4 py-3 text-sm text-muted-foreground sm:flex sm:items-center sm:justify-between">
-      <p className="flex items-start gap-2">
-        {ticket.archived ? <ArchiveIcon className="mt-0.5 size-4 shrink-0" /> : <LockIcon className="mt-0.5 size-4 shrink-0" />}
-        {text}
-      </p>
-      {owner && (
-        <Button asChild size="sm" className="shrink-0">
-          <Link to="/tickets/new" state={{ followUp: { id: ticket._id, subject: ticket.subject } }}>
-            <PlusIcon />
-            Open a new ticket
-          </Link>
-        </Button>
-      )}
-    </div>
+    <Note
+      icon={ticket.archived ? ArchiveIcon : LockIcon}
+      action={
+        owner && (
+          <Button asChild size="sm" className="shrink-0">
+            <Link to="/tickets/new" state={{ followUp: { id: ticket._id, subject: ticket.subject } }}>
+              <PlusIcon />
+              Open a new ticket
+            </Link>
+          </Button>
+        )
+      }
+    >
+      {text}
+    </Note>
   );
 }
 
@@ -59,13 +78,9 @@ function AssignToReplyNote({ ticket, who, user }) {
   else if (!canTakeOver(ticket, user)) text = `${nameOf(ticket.handledBy)} (superadmin) is handling this ticket.`;
   else text = `${nameOf(ticket.handledBy)} is handling this ticket. Take it over to reply.`;
   return (
-    <div role="note" className="grid gap-3 rounded-md border bg-muted px-4 py-3 text-sm text-muted-foreground sm:flex sm:items-center sm:justify-between">
-      <p className="flex items-start gap-2">
-        <UserCheckIcon className="mt-0.5 size-4 shrink-0" />
-        {text}
-      </p>
-      {canTakeOver(ticket, user) && <AssignButton ticket={ticket} className="shrink-0" />}
-    </div>
+    <Note icon={UserCheckIcon} action={canTakeOver(ticket, user) && <AssignButton ticket={ticket} className="shrink-0" />}>
+      {text}
+    </Note>
   );
 }
 
@@ -81,12 +96,35 @@ function useMarkSeenWhenOwner(ticket, owner) {
 
 function BackLink({ to }) {
   return (
-    <Button variant="ghost" size="sm" asChild className="-ml-2 mb-2">
+    <Button variant="ghost" size="sm" asChild className="-ml-2.5 mb-3 text-muted-foreground">
       <Link to={to}>
         <ArrowLeftIcon />
         Back to tickets
       </Link>
     </Button>
+  );
+}
+
+function TicketSkeleton() {
+  return (
+    <div className="grid gap-6" aria-busy="true">
+      <div className="grid gap-3">
+        <Skeleton className="h-4 w-28" />
+        <Skeleton className="h-8 w-2/3" />
+        <Skeleton className="h-5 w-48" />
+      </div>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="grid gap-6">
+          {[0, 1].map((i) => (
+            <div key={i} className="flex gap-4">
+              <Skeleton className="size-9 shrink-0 rounded-full" />
+              <Skeleton className="h-28 flex-1 rounded-xl" />
+            </div>
+          ))}
+        </div>
+        <Skeleton className="h-72 rounded-xl" />
+      </div>
+    </div>
   );
 }
 
@@ -98,17 +136,7 @@ export default function TicketDetailPage() {
   useMarkSeenWhenOwner(ticket, owner);
   const backTo = isAdmin(user) ? '/admin/tickets' : '/tickets';
 
-  if (isPending) {
-    return (
-      <div className="grid gap-4" aria-busy="true">
-        <Skeleton className="h-8 w-2/3" />
-        <div className="grid gap-4 lg:grid-cols-[1fr_18rem]">
-          <Skeleton className="h-64" />
-          <Skeleton className="h-64" />
-        </div>
-      </div>
-    );
-  }
+  if (isPending) return <TicketSkeleton />;
 
   if (isError) {
     const status = getStatusCode(error);
@@ -143,24 +171,37 @@ export default function TicketDetailPage() {
   const canEditPriority = owner || handlesIt;
   const canReply = owner || handlesIt;
   const assignAboveConversation = admin && !closed && !canReply;
+  const replies = ticket.messages.length;
 
   return (
     <>
       <BackLink to={backTo} />
-      <div className="mb-6 grid gap-2">
-        <div className="flex items-start justify-between gap-4">
-          <h1 className="min-w-0 break-words text-2xl font-semibold tracking-tight">{ticket.subject}</h1>
-          <RefreshButton className="shrink-0" />
+      <header className="mb-8 flex items-start justify-between gap-4 border-b pb-6">
+        <div className="grid min-w-0 gap-2">
+          <p className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+            <span className="font-mono font-medium tracking-tight">{ticketRef(ticket._id)}</span>
+            <span aria-hidden>·</span>
+            <span>{ticket.category}</span>
+          </p>
+          <div className="min-w-0">
+            <h1 className="text-[22px] leading-tight font-semibold tracking-tight break-words sm:text-2xl">
+              {ticket.subject}
+            </h1>
+          </div>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <StatusBadge status={ticket.status} />
+            <PriorityBadge priority={ticket.priority} />
+            <span className="text-[13px] text-muted-foreground">
+              Opened by {owner ? 'you' : nameOf(ticket.createdBy)} on {formatDateTime(ticket.createdAt)}
+              {replies > 0 && ` · ${replies} ${replies === 1 ? 'reply' : 'replies'}`}
+            </span>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <StatusBadge status={ticket.status} />
-          <PriorityBadge priority={ticket.priority} />
-          <span className="text-sm text-muted-foreground">{ticket.category}</span>
-        </div>
-      </div>
+        <RefreshButton className="shrink-0" />
+      </header>
 
-      <div className="grid items-start gap-6 lg:grid-cols-[1fr_18rem]">
-        <section className="grid min-w-0 gap-4" aria-label="Conversation">
+      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <section className="grid min-w-0 gap-6" aria-label="Conversation">
           <MessageThread ticket={ticket} currentUser={user} />
           {closed ? (
             <ClosedTicketNote ticket={ticket} owner={owner} admin={admin} />
@@ -171,7 +212,7 @@ export default function TicketDetailPage() {
           )}
         </section>
 
-        <aside className="lg:sticky lg:top-20" aria-label="Ticket details">
+        <aside className="lg:sticky lg:top-6" aria-label="Ticket details">
           <TicketDetailsPanel ticket={ticket} canEditPriority={canEditPriority} canManage={handlesIt}>
             {admin && <AdminTicketActions ticket={ticket} showAssign={!assignAboveConversation} />}
           </TicketDetailsPanel>

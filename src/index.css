@@ -1,80 +1,145 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* shadcn/ui theme (Tailwind v4). Colors are CSS variables, so the whole app
-   can be re-themed here. Primary = blue brand color. */
+/* ==========================================================================
+   Tiket Help design system
+   Every color, radius, shadow and motion value of the app lives here.
+   Components only use these tokens (bg-primary, text-muted-foreground…),
+   so the whole product can be re-themed from this file.
+
+   Palette   one brand color (indigo) + cool neutrals; status colors carry
+             meaning only (open = amber, in progress = blue, resolved = green,
+             urgent / errors = red).
+   Type      Inter. 12 / 13 / 14 / 16 / 20 / 24 px, weights 400-500-600.
+   Spacing   Tailwind 4 px grid. Page gutter 16 px (phone) / 32 px (desktop).
+   Radius    8 px controls, 12 px cards and panels, full for avatars/pills.
+   Elevation hairline borders first; shadows only for floating layers.
+   Motion    ease-out curves below, 150-250 ms, menus/sheets/dialogs only.
+   ========================================================================== */
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(0.985 0.002 247.839);
-  --foreground: oklch(0.21 0.034 264.665);
+  --radius: 0.5rem;
+
+  /* surfaces: canvas (behind the sidebar) < panel (page) < card */
+  --canvas: oklch(0.972 0.003 264);
+  --background: oklch(0.995 0.001 264);
+  --foreground: oklch(0.205 0.018 266);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.21 0.034 264.665);
+  --card-foreground: oklch(0.205 0.018 266);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.21 0.034 264.665);
-  --primary: oklch(0.546 0.245 262.881);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.967 0.003 264.542);
-  --secondary-foreground: oklch(0.21 0.034 264.665);
-  --muted: oklch(0.967 0.003 264.542);
-  --muted-foreground: oklch(0.551 0.027 264.364);
-  --accent: oklch(0.967 0.003 264.542);
-  --accent-foreground: oklch(0.21 0.034 264.665);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.928 0.006 264.531);
-  --input: oklch(0.928 0.006 264.531);
-  --ring: oklch(0.546 0.245 262.881);
-  --sidebar: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.21 0.034 264.665);
-  --sidebar-primary: oklch(0.546 0.245 262.881);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.967 0.003 264.542);
-  --sidebar-accent-foreground: oklch(0.21 0.034 264.665);
-  --sidebar-border: oklch(0.928 0.006 264.531);
-  --sidebar-ring: oklch(0.546 0.245 262.881);
-  /* chart series (validated colorblind-safe pair, light surface) */
-  --series-1: #2a78d6;
-  --series-2: #eb6834;
+  --popover-foreground: oklch(0.205 0.018 266);
+
+  /* brand */
+  --primary: oklch(0.49 0.2 268);
+  --primary-foreground: oklch(0.99 0.004 268);
+  --brand-soft: oklch(0.955 0.025 268);
+  --brand-soft-foreground: oklch(0.42 0.18 268);
+
+  --secondary: oklch(0.962 0.004 264);
+  --secondary-foreground: oklch(0.25 0.018 266);
+  --muted: oklch(0.962 0.004 264);
+  --muted-foreground: oklch(0.52 0.016 264);
+  --accent: oklch(0.955 0.005 264);
+  --accent-foreground: oklch(0.205 0.018 266);
+  --destructive: oklch(0.56 0.21 25);
+  --border: oklch(0.915 0.005 264);
+  --input: oklch(0.885 0.006 264);
+  --ring: oklch(0.49 0.2 268);
+
+  /* status (text on soft background, both readable at AA) */
+  --success: oklch(0.52 0.13 155);
+  --success-soft: oklch(0.96 0.035 155);
+  --warning: oklch(0.55 0.13 65);
+  --warning-soft: oklch(0.965 0.045 85);
+  --info: oklch(0.5 0.15 250);
+  --info-soft: oklch(0.955 0.03 250);
+  --danger: oklch(0.53 0.2 25);
+  --danger-soft: oklch(0.96 0.03 25);
+
+  --sidebar: var(--canvas);
+  --sidebar-foreground: oklch(0.3 0.018 266);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: oklch(0.935 0.006 264);
+  --sidebar-accent-foreground: oklch(0.205 0.018 266);
+  --sidebar-border: oklch(0.915 0.005 264);
+  --sidebar-ring: var(--ring);
+
+  /* chart series (colorblind-safe pair, light surface) */
+  --series-1: #4f5bd5;
+  --series-2: #e0703c;
+
+  --shadow-xs: 0 1px 2px oklch(0.2 0.02 266 / 0.05);
+  --shadow-panel: 0 0 0 1px oklch(0.2 0.02 266 / 0.04), 0 1px 3px oklch(0.2 0.02 266 / 0.06);
+  --shadow-float: 0 0 0 1px oklch(0.2 0.02 266 / 0.06), 0 8px 24px -4px oklch(0.2 0.02 266 / 0.14);
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* height of the phone bottom tab bar (content keeps clear of it) */
+  --tabbar-height: 3.75rem;
 }
 
 .dark {
-  --background: oklch(0.13 0.028 261.692);
-  --foreground: oklch(0.985 0.002 247.839);
-  --card: oklch(0.21 0.034 264.665);
-  --card-foreground: oklch(0.985 0.002 247.839);
-  --popover: oklch(0.21 0.034 264.665);
-  --popover-foreground: oklch(0.985 0.002 247.839);
-  --primary: oklch(0.623 0.214 259.815);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.278 0.033 256.848);
-  --secondary-foreground: oklch(0.985 0.002 247.839);
-  --muted: oklch(0.278 0.033 256.848);
-  --muted-foreground: oklch(0.707 0.022 261.325);
-  --accent: oklch(0.278 0.033 256.848);
-  --accent-foreground: oklch(0.985 0.002 247.839);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.623 0.214 259.815);
-  --sidebar: oklch(0.21 0.034 264.665);
-  --sidebar-foreground: oklch(0.985 0.002 247.839);
-  --sidebar-primary: oklch(0.623 0.214 259.815);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.278 0.033 256.848);
-  --sidebar-accent-foreground: oklch(0.985 0.002 247.839);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.623 0.214 259.815);
-  --series-1: #3987e5;
-  --series-2: #d95926;
+  --canvas: oklch(0.165 0.008 266);
+  --background: oklch(0.19 0.009 266);
+  --foreground: oklch(0.96 0.004 264);
+  --card: oklch(0.215 0.01 266);
+  --card-foreground: oklch(0.96 0.004 264);
+  --popover: oklch(0.235 0.011 266);
+  --popover-foreground: oklch(0.96 0.004 264);
+
+  --primary: oklch(0.66 0.17 270);
+  --primary-foreground: oklch(0.16 0.02 268);
+  --brand-soft: oklch(0.29 0.06 270);
+  --brand-soft-foreground: oklch(0.82 0.1 270);
+
+  --secondary: oklch(0.26 0.01 266);
+  --secondary-foreground: oklch(0.94 0.004 264);
+  --muted: oklch(0.25 0.01 266);
+  --muted-foreground: oklch(0.7 0.012 264);
+  --accent: oklch(0.27 0.011 266);
+  --accent-foreground: oklch(0.96 0.004 264);
+  --destructive: oklch(0.66 0.19 22);
+  --border: oklch(1 0 0 / 9%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.66 0.17 270);
+
+  --success: oklch(0.78 0.13 155);
+  --success-soft: oklch(0.3 0.05 155);
+  --warning: oklch(0.82 0.12 80);
+  --warning-soft: oklch(0.31 0.05 70);
+  --info: oklch(0.78 0.11 250);
+  --info-soft: oklch(0.3 0.05 250);
+  --danger: oklch(0.75 0.15 22);
+  --danger-soft: oklch(0.31 0.06 22);
+
+  --sidebar: var(--canvas);
+  --sidebar-foreground: oklch(0.85 0.006 264);
+  --sidebar-accent: oklch(0.24 0.01 266);
+  --sidebar-accent-foreground: oklch(0.97 0.004 264);
+  --sidebar-border: oklch(1 0 0 / 8%);
+
+  --series-1: #7c86ee;
+  --series-2: #e8834f;
+
+  --shadow-xs: 0 1px 2px oklch(0 0 0 / 0.3);
+  --shadow-panel: 0 0 0 1px oklch(1 0 0 / 0.06);
+  --shadow-float: 0 0 0 1px oklch(1 0 0 / 0.08), 0 12px 32px -6px oklch(0 0 0 / 0.6);
 }
 
 @theme inline {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  --color-canvas: var(--canvas);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -83,6 +148,8 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-soft-foreground: var(--brand-soft-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
@@ -93,6 +160,16 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -101,13 +178,91 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  --shadow-xs: var(--shadow-xs);
+  --shadow-panel: var(--shadow-panel);
+  --shadow-float: var(--shadow-float);
+
+  --ease-out-strong: var(--ease-out);
+  --ease-drawer: var(--ease-drawer);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
+  html {
+    /* phone: no grey flash on tap, no font inflation in landscape */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    background: var(--canvas);
+  }
+
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-canvas text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01", "ss03";
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3 {
+    text-wrap: balance;
+  }
+
+  /* controls respond the moment the finger lands, and never select their label */
+  button, a, [role="button"], [role="tab"], label[for] {
+    touch-action: manipulation;
+  }
+  button, [role="button"], [role="tab"] {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* iOS zooms into inputs under 16px: keep 16px on touch screens */
+  @media (pointer: coarse) {
+    input, textarea, select, [data-slot="select-trigger"] {
+      font-size: 16px !important;
+    }
+  }
+
+  ::selection {
+    background: color-mix(in oklch, var(--primary) 22%, transparent);
+  }
+}
+
+@layer utilities {
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* padding that keeps content clear of the notch / home indicator */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* subtle press feedback for any pressable surface */
+  .pressable {
+    transition: transform 140ms var(--ease-out), background-color 150ms ease, color 150ms ease,
+      border-color 150ms ease, box-shadow 150ms ease;
+  }
+  .pressable:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+}
+
+/* Reduced motion: keep fades, drop movement */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* a loading spinner must still say "working" */
+  .animate-spin {
+    animation-duration: 1s !important;
   }
 }

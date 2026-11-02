@@ -11,8 +11,8 @@ export function Pagination({ pagination, onPageChange, disabled = false }) {
   const to = Math.min(page * limit, total);
 
   return (
-    <nav className="flex flex-wrap items-center justify-between gap-3 pt-4" aria-label="Pagination">
-      <p className="text-sm text-muted-foreground">
+    <nav className="flex flex-wrap items-center justify-between gap-3 border-t pt-4" aria-label="Pagination">
+      <p className="text-[13px] text-muted-foreground tabular-nums">
         {from <= total ? (
           <>
             Showing <span className="font-medium text-foreground">{from}</span>–
@@ -23,7 +23,7 @@ export function Pagination({ pagination, onPageChange, disabled = false }) {
           <>No results on this page</>
         )}
       </p>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
         <Button
           variant="outline"
           size="sm"
@@ -34,7 +34,7 @@ export function Pagination({ pagination, onPageChange, disabled = false }) {
           <ChevronLeftIcon />
           <span className="hidden sm:inline">Previous</span>
         </Button>
-        <span className="text-sm tabular-nums text-muted-foreground">
+        <span className="px-2 text-[13px] text-muted-foreground tabular-nums">
           Page {page} of {totalPages}
         </span>
         <Button
